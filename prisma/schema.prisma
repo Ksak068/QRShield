@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  CORPORATE
+  ADMIN
+}
+
+enum ScanStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum RiskLevel {
+  SAFE
+  SUSPICIOUS
+  PHISHING
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(CORPORATE)
+  isSuspended   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  scans         Scan[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Scan {
+  id              String     @id @default(cuid())
+  userId          String?
+  user            User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  qrImage         String?    @db.Text
+  qrRawContent    String?    @db.Text
+  extractedUrl    String?    @db.Text
+  normalizedUrl   String?    @db.Text
+  features        Json?
+  rfPrediction    Float?
+  rfLabel         String?
+  vtDetected      Boolean    @default(false)
+  vtMaliciousCount Int       @default(0)
+  vtReport        Json?
+  sbThreat        Boolean    @default(false)
+  sbThreatTypes   Json?
+  riskScore       Int?
+  riskLevel       RiskLevel  @default(SAFE)
+  gptScore        Float?
+  gptLabel        String?
+  aiExplanation   Json?
+  status          ScanStatus @default(PENDING)
+  createdAt       DateTime   @default(now())
+}
+
+model ThreatCache {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  vtData    Json?
+  sbData    Json?
+  whoisData Json?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model ApiLog {
+  id        String   @id @default(cuid())
+  endpoint  String
+  method    String
+  userId    String?
+  status    Int
+  duration  Int
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  details   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text
+}
