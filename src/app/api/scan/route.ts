@@ -2,10 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { runScanPipeline } from "@/services/scan-pipeline";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, logRequest } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
   const userId = session?.user?.id;
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")
+    || "127.0.0.1";
+  const startTime = Date.now();
+
+  const { allowed, remaining } = await checkRateLimit(ip, "scan");
+  if (!allowed) {
+    await logRequest({
+      endpoint: "/api/scan",
+      method: "POST",
+      userId,
+      status: 429,
+      duration: Date.now() - startTime,
+      ip,
+    });
+    return NextResponse.json(
+      { error: "Too many requests. Please wait before scanning again.", remaining },
+      { status: 429 },
+    );
+  }
 
   try {
     const body = await request.json();
@@ -20,9 +41,28 @@ export async function POST(request: NextRequest) {
 
     const result = await runScanPipeline(qrContent, qrImage || null, userId);
 
+    await logRequest({
+      endpoint: "/api/scan",
+      method: "POST",
+      userId,
+      status: 200,
+      duration: Date.now() - startTime,
+      ip,
+    });
+
     return NextResponse.json(result);
   } catch (error) {
     console.error("Scan failed:", error);
+
+    await logRequest({
+      endpoint: "/api/scan",
+      method: "POST",
+      userId,
+      status: 500,
+      duration: Date.now() - startTime,
+      ip,
+    });
+
     return NextResponse.json(
       { error: "Scan processing failed" },
       { status: 500 },

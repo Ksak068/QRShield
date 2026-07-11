@@ -69,7 +69,7 @@
 
 | Layer | Implementation |
 |---|---|
-| Rate Limiting | Upstash Redis (Vercel marketplace, optional) |
+| Rate Limiting | PostgreSQL-backed sliding window (scan: 10/min, auth: 5/min) |
 | CSRF | Auth.js built-in |
 | Input Validation | Zod on all routes |
 | XSS Prevention | TypeScript strict + React escaping |
@@ -158,7 +158,7 @@ src/
 │   ├── scanner/            # QR scanner component
 │   └── shared/             # StatCard, skeleton loaders
 ├── hooks/                  # use-scanner, use-debounce, use-media-query
-├── lib/                    # auth.ts, prisma.ts, utils.ts
+├── lib/                    # auth.ts, prisma.ts, rate-limit.ts, utils.ts
 ├── services/               # QR decode, feature extraction, RF, GPT, VT, SB, risk engine
 ├── types/                  # TypeScript definitions
 ├── validations/            # Zod schemas
@@ -196,8 +196,6 @@ npm run dev
 | `OPENAI_MODEL` | No | `openai/gpt-oss-120b:free` | Primary GPT model |
 | `OPENROUTER_FALLBACK_MODEL` | No | `openai/gpt-oss-20b:free` | Fallback if primary fails |
 | `VIRUSTOTAL_API_KEY` | No | — | VirusTotal v3 API key |
-| `UPSTASH_REDIS_REST_URL` | No | — | Rate limiting (optional) |
-| `UPSTASH_REDIS_REST_TOKEN` | No | — | Rate limiting (optional) |
 
 ### Default Test Accounts
 
@@ -238,6 +236,10 @@ Optimized for **Vercel**:
 ```
 npx prisma generate && next build
 ```
+
+### Notes
+
+- `next.config.ts` uses `transpilePackages: ["lucide-react", "framer-motion"]` — required because `lucide-react` v0.400.0 lacks `"use client"` directives needed by Next.js 16's bundler.
 
 ---
 

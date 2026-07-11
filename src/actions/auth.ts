@@ -4,8 +4,25 @@ import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { registerSchema } from "@/validations/auth";
 import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
+import { checkRateLimit, logRequest } from "@/lib/rate-limit";
+
+function getIpFromHeaders(): string {
+  const h = headers();
+  return h.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || h.get("x-real-ip")
+    || "127.0.0.1";
+}
 
 export async function registerUser(formData: FormData) {
+  const ip = getIpFromHeaders();
+  const startTime = Date.now();
+
+  const { allowed } = await checkRateLimit(ip, "auth");
+  if (!allowed) {
+    return { error: "Too many attempts. Please wait before trying again." };
+  }
+
   const raw = {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
@@ -36,6 +53,14 @@ export async function registerUser(formData: FormData) {
     },
   });
 
+  await logRequest({
+    endpoint: "auth/register",
+    method: "POST",
+    status: 200,
+    duration: Date.now() - startTime,
+    ip,
+  });
+
   await signIn("credentials", {
     email: parsed.data.email,
     password: parsed.data.password,
@@ -46,13 +71,43 @@ export async function registerUser(formData: FormData) {
 }
 
 export async function loginUser(formData: FormData) {
+  const ip = getIpFromHeaders();
+  const startTime = Date.now();
+
+  const { allowed } = await checkRateLimit(ip, "auth");
+  if (!allowed) {
+    await logRequest({
+      endpoint: "auth/login",
+      method: "POST",
+      status: 429,
+      duration: Date.now() - startTime,
+      ip,
+    });
+    return { error: "Too many attempts. Please wait before trying again." };
+  }
+
   try {
     await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
       redirectTo: "/dashboard",
     });
+
+    await logRequest({
+      endpoint: "auth/login",
+      method: "POST",
+      status: 200,
+      duration: Date.now() - startTime,
+      ip,
+    });
   } catch (error) {
+    await logRequest({
+      endpoint: "auth/login",
+      method: "POST",
+      status: 401,
+      duration: Date.now() - startTime,
+      ip,
+    });
     return { error: "Invalid email or password" };
   }
 }
