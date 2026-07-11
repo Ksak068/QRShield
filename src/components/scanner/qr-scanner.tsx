@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Camera, Upload, Clipboard, Loader2, ScanQrCode } from "lucide-react";
+import { Camera, Upload, Clipboard, Loader2, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,7 @@ export function QrScanner({ onScan, isProcessing }: QrScannerProps) {
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ScanQrCode className="h-5 w-5" />
+          <QrCode className="h-5 w-5" />
           QR Code Scanner
         </CardTitle>
       </CardHeader>

@@ -192,8 +192,8 @@ npm run dev
 | `DATABASE_URL` | **Yes** | — | Neon PostgreSQL connection string |
 | `AUTH_SECRET` | **Yes** | — | Generate with `npx auth secret` |
 | `AUTH_URL` | No | `http://localhost:3000` | Deployment URL |
-| `OPENAI_API_KEY` | No | — | OpenRouter API key (enables GPT classification) |
-| `OPENAI_MODEL` | No | `openai/gpt-oss-120b:free` | Primary GPT model |
+| `OPENROUTER_API_KEY` | No | — | OpenRouter API key (enables GPT classification) |
+| `OPENROUTER_PRIMARY_MODEL` | No | `openai/gpt-oss-120b:free` | Primary GPT model |
 | `OPENROUTER_FALLBACK_MODEL` | No | `openai/gpt-oss-20b:free` | Fallback if primary fails |
 | `VIRUSTOTAL_API_KEY` | No | — | VirusTotal v3 API key |
 

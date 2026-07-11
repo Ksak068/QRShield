@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import {
   Shield,
-  ScanQrCode,
+  QrCode,
   Brain,
   Globe,
   BarChart3,
@@ -17,7 +17,7 @@ import Link from "next/link";
 
 const features = [
   {
-    icon: ScanQrCode,
+    icon: QrCode,
     title: "QR Code Decoding",
     description: "Decode QR codes from camera, image upload, or clipboard in real-time.",
   },

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  ScanQrCode,
+  QrCode,
   Clock,
   FileText,
   Settings,
@@ -17,7 +17,7 @@ import { useSession } from "next-auth/react";
 
 const corporateLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/scanner", label: "QR Scanner", icon: ScanQrCode },
+  { href: "/scanner", label: "QR Scanner", icon: QrCode },
   { href: "/history", label: "Scan History", icon: Clock },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/settings", label: "Settings", icon: Settings },

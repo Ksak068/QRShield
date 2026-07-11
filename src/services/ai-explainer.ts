@@ -1,12 +1,12 @@
 import OpenAI from "openai";
 import type { ExtractedFeatures, RiskLevel, AiExplanation, GptClassification } from "@/types";
 
-const PRIMARY_MODEL = process.env.OPENAI_MODEL || "openai/gpt-oss-120b:free";
+const PRIMARY_MODEL = process.env.OPENROUTER_PRIMARY_MODEL || "openai/gpt-oss-120b:free";
 const FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "openai/gpt-oss-20b:free";
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENAI_API_KEY || "",
+  apiKey: process.env.OPENROUTER_API_KEY || "",
   defaultHeaders: {
     "HTTP-Referer": process.env.AUTH_URL || "https://qrshield.vercel.app",
     "X-Title": "QR_Shield Enterprise",
@@ -110,7 +110,7 @@ export async function classifyWithGPT(
   url: string,
   features: ExtractedFeatures,
 ): Promise<GptClassification> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.OPENROUTER_API_KEY) {
     return heuristicFallback(features);
   }
 

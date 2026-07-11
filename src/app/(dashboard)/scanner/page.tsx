@@ -6,7 +6,7 @@ import {
   Upload,
   Clipboard,
   X,
-  ScanQrCode,
+  QrCode,
   Shield,
   AlertTriangle,
   CheckCircle,
@@ -140,7 +140,7 @@ export default function ScannerPage() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
             >
-              <ScanQrCode className="mb-4 h-16 w-16 text-emerald-500" />
+              <QrCode className="mb-4 h-16 w-16 text-emerald-500" />
               <h2 className="mb-2 text-xl font-semibold">Scan a QR Code</h2>
               <p className="mb-6 text-sm text-muted-foreground">
                 Use your camera, upload an image, or paste from clipboard

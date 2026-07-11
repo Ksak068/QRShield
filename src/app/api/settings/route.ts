@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const ALLOWED_KEYS = ["system_name", "VIRUSTOTAL_API_KEY", "OPENAI_API_KEY", "OPENROUTER_FALLBACK_MODEL"];
+const ALLOWED_KEYS = ["system_name", "VIRUSTOTAL_API_KEY", "OPENROUTER_API_KEY", "OPENROUTER_FALLBACK_MODEL"];
 
 export async function GET() {
   const session = await auth();

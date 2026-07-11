@@ -70,10 +70,10 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="OPENAI_API_KEY">OpenRouter API Key</Label>
+              <Label htmlFor="OPENROUTER_API_KEY">OpenRouter API Key</Label>
               <Input
-                id="OPENAI_API_KEY"
-                name="OPENAI_API_KEY"
+                id="OPENROUTER_API_KEY"
+                name="OPENROUTER_API_KEY"
                 type="password"
                 placeholder="Enter your OpenRouter API key"
               />

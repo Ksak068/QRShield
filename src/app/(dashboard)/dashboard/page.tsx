@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Shield,
-  ScanQrCode,
+  QrCode,
   AlertTriangle,
   CheckCircle,
   AlertCircle,
@@ -93,7 +93,7 @@ export default function DashboardPage() {
         <StatCard
           title="Total Scans"
           value={total}
-          icon={ScanQrCode}
+          icon={QrCode}
           variant="default"
         />
         <StatCard
