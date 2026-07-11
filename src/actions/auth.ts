@@ -7,15 +7,15 @@ import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { checkRateLimit, logRequest } from "@/lib/rate-limit";
 
-function getIpFromHeaders(): string {
-  const h = headers();
+async function getIpFromHeaders(): Promise<string> {
+  const h = await headers();
   return h.get("x-forwarded-for")?.split(",")[0]?.trim()
     || h.get("x-real-ip")
     || "127.0.0.1";
 }
 
 export async function registerUser(formData: FormData) {
-  const ip = getIpFromHeaders();
+  const ip = await getIpFromHeaders();
   const startTime = Date.now();
 
   const { allowed } = await checkRateLimit(ip, "auth");
@@ -71,7 +71,7 @@ export async function registerUser(formData: FormData) {
 }
 
 export async function loginUser(formData: FormData) {
-  const ip = getIpFromHeaders();
+  const ip = await getIpFromHeaders();
   const startTime = Date.now();
 
   const { allowed } = await checkRateLimit(ip, "auth");

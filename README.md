@@ -138,7 +138,7 @@ Feature Extraction (8 features)
 The system degrades gracefully with no API keys configured:
 - **No OpenRouter key** → heuristic GPT fallback (feature-based scoring identical to RF fallback)
 - **No VirusTotal key** → signal skipped (0 contribution, remaining signals rebalanced)
-- **Safe Browsing** → always active (100% local, zero dependencies)
+- **Local Reputation Checker** → always active (100% local, zero dependencies)
 - **Random Forest** → always active (model bundled in `public/models/rf-model.json`)
 - **Heuristic fallback** → if model fetch fails, feature-based scoring kicks in
 
