@@ -64,48 +64,6 @@ export async function registerUser(formData: FormData) {
   return { success: true };
 }
 
-export async function loginUser(formData: FormData) {
-  const ip = await getIpFromHeaders();
-  const startTime = Date.now();
-
-  const { allowed } = await checkRateLimit(ip, "auth");
-  if (!allowed) {
-    await logRequest({
-      endpoint: "auth/login",
-      method: "POST",
-      status: 429,
-      duration: Date.now() - startTime,
-      ip,
-    });
-    return { error: "Too many attempts. Please wait before trying again." };
-  }
-
-  try {
-    await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirectTo: "/dashboard",
-    });
-
-    await logRequest({
-      endpoint: "auth/login",
-      method: "POST",
-      status: 200,
-      duration: Date.now() - startTime,
-      ip,
-    });
-  } catch (error) {
-    await logRequest({
-      endpoint: "auth/login",
-      method: "POST",
-      status: 401,
-      duration: Date.now() - startTime,
-      ip,
-    });
-    return { error: "Invalid email or password" };
-  }
-}
-
 export async function logoutUser() {
   await signOut({ redirectTo: "/" });
 }
