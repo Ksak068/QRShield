@@ -28,7 +28,6 @@ const corporateLinks = [
 
 const adminLinks = [
   { href: "/admin", label: "Admin Dashboard", icon: Users },
-  { href: "/admin", label: "Analytics", icon: BarChart3 },
 ];
 
 export function Sidebar() {

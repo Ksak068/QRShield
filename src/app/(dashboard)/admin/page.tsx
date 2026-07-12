@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Shield, Ban, Trash2, Download, BarChart3 } from "lucide-react";
+import { Users, Shield, Ban, Trash2, Download, BarChart3, QrCode, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatRelativeTime, truncate } from "@/lib/utils";
 import { StatCard } from "@/components/shared/stat-card";
 import { PieChartWidget } from "@/components/charts/pie-chart";
 
@@ -19,6 +19,15 @@ interface AdminUser {
   _count: { scans: number };
 }
 
+interface AdminScan {
+  id: string;
+  extractedUrl: string | null;
+  riskLevel: string;
+  riskScore: number | null;
+  createdAt: string;
+  user?: { name: string | null; email: string } | null;
+}
+
 interface Analytics {
   totalScans: number;
   totalUsers: number;
@@ -28,17 +37,20 @@ interface Analytics {
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [activeTab, setActiveTab] = useState<"users" | "analytics">("users");
+  const [scans, setScans] = useState<AdminScan[]>([]);
+  const [activeTab, setActiveTab] = useState<"users" | "scans" | "analytics">("users");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/users").then((r) => r.json()),
       fetch("/api/admin/analytics").then((r) => r.json()),
+      fetch("/api/scan?limit=50").then((r) => r.json()),
     ])
-      .then(([usersData, analyticsData]) => {
+      .then(([usersData, analyticsData, scansData]) => {
         setUsers(usersData);
         setAnalytics(analyticsData);
+        setScans(scansData.scans || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -121,6 +133,16 @@ export default function AdminPage() {
           }`}
         >
           User Management
+        </button>
+        <button
+          onClick={() => setActiveTab("scans")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "scans"
+              ? "border-b-2 border-primary text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Recent Scans
         </button>
         <button
           onClick={() => setActiveTab("analytics")}
@@ -215,6 +237,63 @@ export default function AdminPage() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : activeTab === "scans" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>All Scans ({scans.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-3 font-medium">User</th>
+                    <th className="pb-3 font-medium">URL</th>
+                    <th className="pb-3 font-medium">Score</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scans.map((scan) => (
+                    <tr key={scan.id} className="border-b last:border-0">
+                      <td className="py-3 pr-4 text-xs text-muted-foreground">
+                        {scan.user?.email || "Anonymous"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {truncate(scan.extractedUrl || "", 50)}
+                      </td>
+                      <td className="py-3 pr-4">{scan.riskScore ?? "—"}</td>
+                      <td className="py-3 pr-4">
+                        <Badge
+                          variant={
+                            scan.riskLevel === "SAFE"
+                              ? "success"
+                              : scan.riskLevel === "SUSPICIOUS"
+                                ? "warning"
+                                : "danger"
+                          }
+                        >
+                          {scan.riskLevel}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {formatRelativeTime(new Date(scan.createdAt))}
+                      </td>
+                    </tr>
+                  ))}
+                  {scans.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                        No scans found across the organization.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

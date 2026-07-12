@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Shield,
   QrCode,
@@ -33,8 +34,15 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (session?.user?.role === "ADMIN") {
+      router.replace("/admin");
+    }
+  }, [session, router]);
 
   useEffect(() => {
     fetch("/api/scan?limit=10")
