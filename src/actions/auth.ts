@@ -28,6 +28,7 @@ export async function registerUser(formData: FormData) {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
     confirmPassword: formData.get("confirmPassword") as string,
+    role: formData.get("role") as "CORPORATE" | "ADMIN" || "CORPORATE",
   };
 
   const parsed = registerSchema.safeParse(raw);
@@ -50,6 +51,7 @@ export async function registerUser(formData: FormData) {
       name: parsed.data.name,
       email: parsed.data.email,
       passwordHash,
+      role: parsed.data.role,
     },
   });
 

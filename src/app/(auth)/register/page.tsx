@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Eye, EyeOff, UserCheck } from "lucide-react";
+import { Shield, Eye, EyeOff, UserCheck, Crown, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ import { registerUser } from "@/actions/auth";
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState<"CORPORATE" | "ADMIN">("CORPORATE");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -117,10 +118,41 @@ export default function RegisterPage() {
                 minLength={8}
               />
             </div>
-            <div className="flex items-center justify-center gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-              <UserCheck className="h-3.5 w-3.5" />
-              <span>New accounts are created as</span>
-              <Badge variant="success">CORPORATE</Badge>
+            <div className="space-y-2">
+              <Label>Account Type</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole("CORPORATE")}
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors ${
+                    role === "CORPORATE"
+                      ? "border-emerald-500 bg-emerald-500/10"
+                      : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <User className="h-5 w-5 text-emerald-500" />
+                  <div>
+                    <p className="font-medium">Corporate User</p>
+                    <p className="text-xs text-muted-foreground">Scan and analyze QR codes</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("ADMIN")}
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors ${
+                    role === "ADMIN"
+                      ? "border-emerald-500 bg-emerald-500/10"
+                      : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <Crown className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <p className="font-medium">Administrator</p>
+                    <p className="text-xs text-muted-foreground">Manage users and view analytics</p>
+                  </div>
+                </button>
+              </div>
+              <input type="hidden" name="role" value={role} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create Account"}
