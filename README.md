@@ -228,13 +228,13 @@ Optimized for **Vercel**:
 1. Push to GitHub
 2. Import to Vercel
 3. Set environment variables in Vercel dashboard
-4. Set build command: `npx prisma generate && next build`
+4. Set build command: `npx prisma generate && npx prisma db push && next build`
 5. After deploy, run seed script against Neon DB: `npx tsx prisma/seed.ts`
 
 ### Vercel Build Command
 
 ```
-npx prisma generate && next build
+npx prisma generate && npx prisma db push && next build
 ```
 
 ### Notes
