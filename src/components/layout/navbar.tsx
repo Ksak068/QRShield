@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, Menu, X } from "lucide-react";
+import { Shield, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
@@ -43,16 +44,28 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <ThemeToggle />
           {session ? (
-            <Button variant="outline" size="sm" onClick={() => signOut()}>
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="hidden text-right lg:block">
+                <p className="text-sm font-medium leading-none">{session.user?.name}</p>
+                <p className="text-xs text-muted-foreground">{session.user?.email}</p>
+              </div>
+              <Badge
+                variant={session.user?.role === "ADMIN" ? "default" : "success"}
+                className="hidden sm:inline-flex"
+              >
+                {session.user?.role}
+              </Badge>
+              <Button variant="ghost" size="icon" onClick={() => signOut()} title="Sign out">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           ) : (
             <Link href="/login">
               <Button size="sm">Sign In</Button>
             </Link>
           )}
+          <ThemeToggle />
         </div>
 
         <div className="flex items-center gap-2 md:hidden">

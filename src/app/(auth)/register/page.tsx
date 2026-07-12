@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Eye, EyeOff } from "lucide-react";
+import { Shield, Eye, EyeOff, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -115,6 +116,11 @@ export default function RegisterPage() {
                 required
                 minLength={8}
               />
+            </div>
+            <div className="flex items-center justify-center gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              <UserCheck className="h-3.5 w-3.5" />
+              <span>New accounts are created as</span>
+              <Badge variant="success">CORPORATE</Badge>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create Account"}

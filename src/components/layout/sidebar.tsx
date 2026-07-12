@@ -11,9 +11,12 @@ import {
   Shield,
   Users,
   BarChart3,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const corporateLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -65,6 +68,25 @@ export function Sidebar() {
             );
           })}
         </nav>
+        {session?.user && (
+          <div className="border-t pt-4">
+            <div className="mb-2 px-3">
+              <p className="truncate text-sm font-medium">{session.user.name}</p>
+              <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
+            </div>
+            <div className="flex items-center justify-between px-3">
+              <Badge
+                variant={session.user.role === "ADMIN" ? "default" : "success"}
+              >
+                {session.user.role}
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={() => signOut()}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

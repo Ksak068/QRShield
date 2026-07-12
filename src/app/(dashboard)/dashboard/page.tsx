@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   Shield,
   QrCode,
@@ -31,6 +32,7 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,9 +86,23 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your QR code security scans</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">
+            Welcome, {session?.user?.name || "User"}
+          </h1>
+          <p className="text-muted-foreground">
+            {session?.user?.role === "ADMIN"
+              ? "Overview of all scans across your organization"
+              : "Overview of your QR code security scans"}
+          </p>
+        </div>
+        <Badge
+          variant={session?.user?.role === "ADMIN" ? "default" : "success"}
+          className="mt-1 text-xs"
+        >
+          {session?.user?.role}
+        </Badge>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
