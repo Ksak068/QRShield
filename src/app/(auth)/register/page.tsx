@@ -40,8 +40,7 @@ export default function RegisterPage() {
       if (result?.error) {
         setError(result.error);
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        router.push("/login?registered=true");
       }
     } catch {
       setError("Registration failed. Please try again.");

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { signIn, signOut } from "@/lib/auth";
+import { signOut } from "@/lib/auth";
 import { registerSchema } from "@/validations/auth";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
@@ -59,12 +59,6 @@ export async function registerUser(formData: FormData) {
     status: 200,
     duration: Date.now() - startTime,
     ip,
-  });
-
-  await signIn("credentials", {
-    email: parsed.data.email,
-    password: parsed.data.password,
-    redirect: false,
   });
 
   return { success: true };
