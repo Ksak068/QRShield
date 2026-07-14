@@ -12,6 +12,7 @@ import {
   Users,
   BarChart3,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession, signOut } from "next-auth/react";
@@ -23,11 +24,13 @@ const corporateLinks = [
   { href: "/scanner", label: "QR Scanner", icon: QrCode },
   { href: "/history", label: "Scan History", icon: Clock },
   { href: "/reports", label: "Reports", icon: FileText },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 const adminLinks = [
   { href: "/admin", label: "Admin Dashboard", icon: Users },
+  { href: "/admin/threat-intel", label: "Threat Intel", icon: Shield },
 ];
 
 export function Sidebar() {

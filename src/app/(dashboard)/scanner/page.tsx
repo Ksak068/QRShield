@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useScanner } from "@/hooks/use-scanner";
+import { useToast } from "@/components/ui/toast";
 
 type ScanResult = {
   scanId: string;
@@ -40,6 +41,7 @@ type ScanResult = {
 };
 
 export default function ScannerPage() {
+  const { toast } = useToast();
   const [result, setResult] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,14 @@ export default function ScannerPage() {
       const data = await res.json();
       setResult(data);
       setMode("result");
+      toast(
+        data.riskLevel === "SAFE"
+          ? "✓ Safe QR detected"
+          : data.riskLevel === "SUSPICIOUS"
+            ? "⚠️ Suspicious QR detected"
+            : "🚫 High-risk QR detected",
+        data.riskLevel === "SAFE" ? "success" : data.riskLevel === "SUSPICIOUS" ? "warning" : "danger",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Scan failed");
     } finally {

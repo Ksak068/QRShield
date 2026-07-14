@@ -10,8 +10,19 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") || "csv";
+  const fromDate = searchParams.get("fromDate");
+  const toDate = searchParams.get("toDate");
+
+  const where: any = {};
+  if (fromDate || toDate) {
+    const createdAt: Record<string, Date> = {};
+    if (fromDate) createdAt.gte = new Date(fromDate);
+    if (toDate) createdAt.lte = new Date(toDate + "T23:59:59");
+    where.createdAt = createdAt;
+  }
 
   const scans = await prisma.scan.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     include: { user: { select: { email: true } } },
   });

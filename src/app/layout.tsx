@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "@/components/layout/theme-provider";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 export default function RootLayout({
@@ -19,7 +20,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </ThemeProvider>
         </SessionProvider>
       </body>

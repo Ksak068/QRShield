@@ -5,6 +5,7 @@ import { Shield, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 
@@ -46,6 +47,7 @@ export function Navbar() {
           ))}
           {session ? (
             <div className="flex items-center gap-3">
+              <NotificationBell />
               <div className="hidden text-right lg:block">
                 <p className="text-sm font-medium leading-none">{session.user?.name}</p>
                 <p className="text-xs text-muted-foreground">{session.user?.email}</p>

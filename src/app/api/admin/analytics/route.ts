@@ -32,6 +32,14 @@ export async function GET() {
     ORDER BY date ASC
   `;
 
+  const scansByMonth = await prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
+    SELECT TO_CHAR(created_at, 'YYYY-MM') as month, COUNT(*)::int as count
+    FROM "Scan"
+    WHERE created_at >= NOW() - INTERVAL '12 months'
+    GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+    ORDER BY month ASC
+  `;
+
   const riskDistribution: Record<string, number> = {};
   for (const r of scansByRisk) {
     riskDistribution[r.riskLevel] = r._count;
@@ -43,6 +51,10 @@ export async function GET() {
     riskDistribution,
     scansByDay: scansByDay.map((r) => ({
       date: typeof r.date === "string" ? r.date : String(r.date),
+      count: Number(r.count),
+    })),
+    scansByMonth: scansByMonth.map((r) => ({
+      month: typeof r.month === "string" ? r.month : String(r.month),
       count: Number(r.count),
     })),
     recentScans,

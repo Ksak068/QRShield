@@ -6,6 +6,7 @@ import { lookupUrl as vtLookup } from "@/services/virus-total";
 import { lookupUrl as sbLookup } from "@/services/safe-browsing";
 import { classifyWithGPT } from "@/services/ai-explainer";
 import { calculateRisk } from "@/services/risk-engine";
+import { notifyAdmins } from "@/lib/notifications";
 import type { ExtractedFeatures, RiskEngineResult } from "@/types";
 import type { RiskLevel, ScanStatus } from "@prisma/client";
 
@@ -102,6 +103,11 @@ export async function runScanPipeline(
       },
     });
 
+    const [suspiciousThreshold, phishingThreshold] = await Promise.all([
+      prisma.setting.findUnique({ where: { key: "RISK_THRESHOLD_SUSPICIOUS" } }),
+      prisma.setting.findUnique({ where: { key: "RISK_THRESHOLD_PHISHING" } }),
+    ]);
+
     const riskResult: RiskEngineResult = calculateRisk(
       rfResult.probability,
       gptResult.riskScore,
@@ -109,6 +115,10 @@ export async function runScanPipeline(
       vtMaliciousCount,
       sbThreat,
       features.domainAge,
+      {
+        suspicious: Number(suspiciousThreshold?.value) || 30,
+        phishing: Number(phishingThreshold?.value) || 70,
+      },
     );
 
     await prisma.scan.update({
@@ -119,6 +129,16 @@ export async function runScanPipeline(
         status: "COMPLETED" as ScanStatus,
       },
     });
+
+    if (riskResult.riskLevel === "PHISHING" || riskResult.riskLevel === "SUSPICIOUS") {
+      const notifType = riskResult.riskLevel === "PHISHING" ? "scan.phishing" : "scan.suspicious";
+      await notifyAdmins(
+        notifType,
+        riskResult.riskLevel === "PHISHING" ? "Phishing QR Detected" : "Suspicious QR Detected",
+        `Risk score ${riskResult.riskScore} — ${extractedUrl.slice(0, 80)}`,
+        `/admin`,
+      );
+    }
 
     return {
       scanId: scan.id,

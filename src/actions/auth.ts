@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { signOut } from "@/lib/auth";
 import { registerSchema } from "@/validations/auth";
+import { notifyAdmins } from "@/lib/notifications";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { checkRateLimit, logRequest } from "@/lib/rate-limit";
@@ -62,6 +63,8 @@ export async function registerUser(formData: FormData) {
     duration: Date.now() - startTime,
     ip,
   });
+
+  await notifyAdmins("user.registered", "New User Registered", `${parsed.data.email} (${parsed.data.role})`, `/admin`);
 
   return { success: true };
 }

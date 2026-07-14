@@ -18,6 +18,11 @@ function calculateDomainAgeScore(domainAge: number | null): number {
   return 10;
 }
 
+const DEFAULT_THRESHOLDS = {
+  suspicious: 30,
+  phishing: 70,
+};
+
 export function calculateRisk(
   rfProbability: number,
   gptScore: number | null,
@@ -25,6 +30,7 @@ export function calculateRisk(
   vtMaliciousCount: number,
   sbThreat: boolean,
   domainAge: number | null,
+  thresholds?: { suspicious: number; phishing: number },
 ): RiskEngineResult {
   const rfContribution = rfProbability * 100 * WEIGHTS.rfPrediction;
 
@@ -48,9 +54,10 @@ export function calculateRisk(
     100,
   );
 
+  const t = thresholds || DEFAULT_THRESHOLDS;
   let riskLevel: RiskLevel;
-  if (riskScore >= 70) riskLevel = "PHISHING";
-  else if (riskScore >= 30) riskLevel = "SUSPICIOUS";
+  if (riskScore >= t.phishing) riskLevel = "PHISHING";
+  else if (riskScore >= t.suspicious) riskLevel = "SUSPICIOUS";
   else riskLevel = "SAFE";
 
   return {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Shield,
   QrCode,
@@ -16,6 +17,7 @@ import { BarChartWidget } from "@/components/charts/bar-chart";
 import { LineChartWidget } from "@/components/charts/line-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatRelativeTime, truncate } from "@/lib/utils";
 
 interface DashboardData {
@@ -105,12 +107,19 @@ export default function DashboardPage() {
               : "Overview of your QR code security scans"}
           </p>
         </div>
-        <Badge
-          variant={session?.user?.role === "ADMIN" ? "default" : "success"}
-          className="mt-1 text-xs"
-        >
-          {session?.user?.role}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Link href="/scanner">
+            <Button className="gap-2">
+              <QrCode className="h-4 w-4" /> Quick Scan
+            </Button>
+          </Link>
+          <Badge
+            variant={session?.user?.role === "ADMIN" ? "default" : "success"}
+            className="text-xs"
+          >
+            {session?.user?.role}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

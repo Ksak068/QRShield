@@ -79,11 +79,33 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const limit = Math.min(Number(searchParams.get("limit")) || 20, 100);
   const offset = Number(searchParams.get("offset")) || 0;
+  const riskLevel = searchParams.get("riskLevel");
+  const fromDate = searchParams.get("fromDate");
+  const toDate = searchParams.get("toDate");
+  const search = searchParams.get("search");
 
   const isAdmin = session.user.role === "ADMIN";
+  const userIdFilter = isAdmin ? {} : { userId: session.user.id };
+
+  const where: any = { ...userIdFilter };
+
+  if (riskLevel && ["SAFE", "SUSPICIOUS", "PHISHING"].includes(riskLevel)) {
+    where.riskLevel = riskLevel;
+  }
+
+  if (fromDate || toDate) {
+    const createdAt: Record<string, Date> = {};
+    if (fromDate) createdAt.gte = new Date(fromDate);
+    if (toDate) createdAt.lte = new Date(toDate);
+    where.createdAt = createdAt;
+  }
+
+  if (search) {
+    where.extractedUrl = { contains: search, mode: "insensitive" };
+  }
 
   const scans = await prisma.scan.findMany({
-    where: isAdmin ? {} : { userId: session.user.id },
+    where,
     orderBy: { createdAt: "desc" },
     take: limit,
     skip: offset,
@@ -92,9 +114,7 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const total = await prisma.scan.count({
-    where: isAdmin ? {} : { userId: session.user.id },
-  });
+  const total = await prisma.scan.count({ where });
 
   return NextResponse.json({ scans, total });
 }

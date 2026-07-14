@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { notifyAdmins } from "@/lib/notifications";
 
 export async function getUserScans(limit = 20, offset = 0) {
   const session = await auth();
@@ -60,6 +61,22 @@ export async function deleteScan(scanId: string) {
   }
 
   await prisma.scan.delete({ where: { id: scanId } });
+
+  if (session.user.role === "ADMIN" && scan.userId !== session.user.id) {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: session.user.id,
+          action: "scan.delete",
+          details: { scanId, targetUserId: scan.userId, url: scan.extractedUrl },
+        },
+      });
+      await notifyAdmins("scan.delete", "Scan Deleted by Admin", `A scan was deleted by an admin.`, `/admin`);
+    } catch {
+      // non-critical
+    }
+  }
+
   revalidatePath("/history");
   return { success: true };
 }
