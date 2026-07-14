@@ -170,6 +170,17 @@ export default function AdminPage() {
     if (activeTab === "logs") fetchLogs(logPage);
   }, [activeTab, logPage, fetchLogs]);
 
+  useEffect(() => {
+    if (activeTab === "users") {
+      fetch("/api/admin/users").then(r => r.json()).then(d => setUsers(d || []));
+    } else if (activeTab === "scans") {
+      fetch("/api/scan?limit=50").then(r => r.json()).then(d => setScans(d.scans || []));
+    } else if (activeTab === "analytics") {
+      fetch("/api/admin/analytics").then(r => r.json()).then(d => setAnalytics(d));
+      fetch("/api/admin/top-domains").then(r => r.json()).then(d => setTopDomains(d.domains || [])).catch(() => {});
+    }
+  }, [activeTab]);
+
   const handleUserAction = async (userId: string, action: string) => {
     await fetch("/api/admin/users", {
       method: "PUT",
