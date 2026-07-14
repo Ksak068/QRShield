@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyAdmins } from "@/lib/notifications";
@@ -6,7 +7,7 @@ import { notifyAdmins } from "@/lib/notifications";
 async function logAudit(
   adminId: string,
   action: string,
-  details: Record<string, unknown>,
+  details: Prisma.InputJsonValue,
   ip?: string,
 ) {
   try {
