@@ -58,6 +58,7 @@ interface HealthStatus {
   vtConfigured: boolean;
   orConfigured: boolean;
   dbConnected: boolean;
+  uptime?: number;
 }
 
 interface TopDomain {
