@@ -49,6 +49,7 @@ interface Analytics {
   totalUsers: number;
   riskDistribution: Record<string, number>;
   scansByDay: Array<{ date: string; count: number }>;
+  scansByMonth: Array<{ month: string; count: number }>;
   recentScans: AdminScan[];
 }
 
