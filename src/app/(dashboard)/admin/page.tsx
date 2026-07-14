@@ -807,9 +807,9 @@ export default function AdminPage() {
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Server Uptime</dt>
                     <dd className="font-mono text-xs">
-                      {Math.floor(health.uptime / 86400)}d{" "}
-                      {Math.floor((health.uptime % 86400) / 3600)}h{" "}
-                      {Math.floor((health.uptime % 3600) / 60)}m
+                      {Math.floor((health.uptime ?? 0) / 86400)}d{" "}
+                      {Math.floor(((health.uptime ?? 0) % 86400) / 3600)}h{" "}
+                      {Math.floor(((health.uptime ?? 0) % 3600) / 60)}m
                     </dd>
                   </div>
                 </dl>
