@@ -183,7 +183,6 @@ export default function ScannerPage() {
                 className="hidden"
                 onChange={handleFileSelect}
               />
-              <div id="qr-reader-file" className="hidden" />
             </CardContent>
           </Card>
 
@@ -351,6 +350,19 @@ export default function ScannerPage() {
           </div>
         </div>
       )}
+      {mode === "upload" && isScanning && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="mb-4 h-12 w-12 animate-spin text-emerald-500" />
+            <p className="text-lg font-medium">Decoding QR Code...</p>
+            <p className="text-sm text-muted-foreground">
+              Reading the QR code from the uploaded image
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <div id="qr-reader-file" className="hidden" />
     </div>
   );
 }
