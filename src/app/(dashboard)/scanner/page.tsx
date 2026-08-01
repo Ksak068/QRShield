@@ -183,6 +183,7 @@ export default function ScannerPage() {
                 className="hidden"
                 onChange={handleFileSelect}
               />
+              <div id="qr-reader-file" className="hidden" />
             </CardContent>
           </Card>
 
