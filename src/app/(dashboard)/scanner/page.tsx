@@ -319,7 +319,9 @@ export default function ScannerPage() {
                         : "No threats detected"
                       : result.vtStatus === "not-configured"
                         ? "Not configured (VIRUSTOTAL_API_KEY missing)"
-                        : "Lookup failed — try again"}
+                        : result.vtStatus === "rate-limited"
+                          ? "VT rate limit hit — try again in a minute"
+                          : "Lookup failed — try again"}
                   </p>
                 </div>
                 <div className="rounded-lg bg-muted p-4">

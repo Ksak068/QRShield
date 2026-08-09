@@ -22,7 +22,7 @@ export interface ScanPipelineResult {
   gptStatus: "ok" | "fallback" | "unavailable";
   vtDetected: boolean;
   vtMaliciousCount: number;
-  vtStatus: "ok" | "not-configured" | "failed";
+  vtStatus: "ok" | "not-configured" | "failed" | "rate-limited";
   sbThreat: boolean;
   sbThreatTypes: string[];
   riskScore: number;
@@ -65,25 +65,36 @@ export async function runScanPipeline(
       data: { rfPrediction: rfResult.probability, rfLabel: rfResult.label },
     });
 
-    const gptResult = await classifyWithGPT(normalizedUrl, features);
-    const gptStatus: "ok" | "fallback" | "unavailable" = gptResult.usedFallback
-      ? "fallback"
-      : "ok";
+    const [gptOutcome, vtOutcome, sbOutcome] = await Promise.allSettled([
+      classifyWithGPT(normalizedUrl, features),
+      vtLookup(normalizedUrl),
+      sbLookup(normalizedUrl),
+    ]);
 
-    await prisma.scan.update({
-      where: { id: scan.id },
-      data: {
-        gptScore: gptResult.riskScore,
-        gptLabel: gptResult.riskLevel,
-        aiExplanation: {
-          summary: gptResult.summary,
-          reasons: gptResult.reasons,
-          recommendation: gptResult.recommendation,
-        } as any,
-      },
-    });
+    const gptResult =
+      gptOutcome.status === "fulfilled" ? gptOutcome.value : null;
+    const gptStatus: "ok" | "fallback" | "unavailable" = gptResult === null
+      ? "unavailable"
+      : gptResult.usedFallback
+        ? "fallback"
+        : "ok";
 
-    const vtResult = await vtLookup(normalizedUrl);
+    if (gptResult) {
+      await prisma.scan.update({
+        where: { id: scan.id },
+        data: {
+          gptScore: gptResult.riskScore,
+          gptLabel: gptResult.riskLevel,
+          aiExplanation: {
+            summary: gptResult.summary,
+            reasons: gptResult.reasons,
+            recommendation: gptResult.recommendation,
+          } as any,
+        },
+      });
+    }
+
+    const vtResult = vtOutcome.status === "fulfilled" ? vtOutcome.value : null;
     const vtDetected = vtResult?.detected || false;
     const vtMaliciousCount = vtResult?.maliciousCount || 0;
     const vtStatus = vtResult?.status || "failed";
@@ -97,7 +108,7 @@ export async function runScanPipeline(
       },
     });
 
-    const sbResult = await sbLookup(normalizedUrl);
+    const sbResult = sbOutcome.status === "fulfilled" ? sbOutcome.value : null;
     const sbThreat = sbResult?.threat || false;
     const sbThreatTypes = sbResult?.threatTypes || [];
 
@@ -116,7 +127,7 @@ export async function runScanPipeline(
 
     const riskResult: RiskEngineResult = calculateRisk(
       rfResult.probability,
-      gptResult.riskScore,
+      gptResult?.riskScore ?? null,
       vtDetected,
       vtMaliciousCount,
       sbThreat,
@@ -153,8 +164,8 @@ export async function runScanPipeline(
       features,
       rfPrediction: rfResult.probability,
       rfLabel: rfResult.label,
-      gptScore: gptResult.riskScore,
-      gptLabel: gptResult.riskLevel,
+      gptScore: gptResult?.riskScore ?? 0,
+      gptLabel: gptResult?.riskLevel ?? "SAFE",
       gptStatus,
       vtDetected,
       vtMaliciousCount,
@@ -163,11 +174,13 @@ export async function runScanPipeline(
       sbThreatTypes,
       riskScore: riskResult.riskScore,
       riskLevel: riskResult.riskLevel as RiskLevel,
-      aiExplanation: {
-        summary: gptResult.summary,
-        reasons: gptResult.reasons,
-        recommendation: gptResult.recommendation,
-      },
+      aiExplanation: gptResult
+        ? {
+            summary: gptResult.summary,
+            reasons: gptResult.reasons,
+            recommendation: gptResult.recommendation,
+          }
+        : null,
     };
   } catch (error) {
     await prisma.scan.update({

@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 
 const BASE_URL = "https://www.virustotal.com/api/v3";
+const MAX_POLL_ATTEMPTS = 15;
+const POLL_INTERVAL_MS = 2000;
+const MAX_RETRY_ATTEMPTS = 3;
 
 interface VtResponse {
   detected: boolean;
@@ -8,7 +11,7 @@ interface VtResponse {
   suspiciousCount: number;
   harmlessCount: number;
   undetectedCount: number;
-  status: "ok" | "not-configured" | "failed";
+  status: "ok" | "not-configured" | "failed" | "rate-limited";
   report: Record<string, unknown>;
 }
 
@@ -17,6 +20,45 @@ function encodeBase64Url(input: string): string {
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
+}
+
+interface FetchResult {
+  ok: boolean;
+  status: number;
+  data: any;
+}
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  apiKey: string,
+): Promise<FetchResult | null> {
+  let delay = 2000;
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...init,
+        headers: {
+          "x-apikey": apiKey,
+          ...(init.headers || {}),
+        },
+      });
+
+      if (response.status === 429) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 2;
+        continue;
+      }
+
+      const data = response.ok ? await response.json() : null;
+      return { ok: response.ok, status: response.status, data };
+    } catch (error) {
+      if (attempt === MAX_RETRY_ATTEMPTS) return null;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 2;
+    }
+  }
+  return null;
 }
 
 export async function lookupUrl(url: string): Promise<VtResponse | null> {
@@ -36,44 +78,65 @@ export async function lookupUrl(url: string): Promise<VtResponse | null> {
   }
 
   try {
-    const encodedUrl = encodeBase64Url(normalized);
-
-    const submitResponse = await fetch(`${BASE_URL}/urls`, {
-      method: "POST",
-      headers: {
-        "x-apikey": apiKey,
-        "Content-Type": "application/x-www-form-urlencoded",
+    const submit = await fetchWithRetry(
+      `${BASE_URL}/urls`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `url=${encodeURIComponent(normalized)}`,
       },
-      body: `url=${encodeURIComponent(normalized)}`,
-    });
+      apiKey,
+    );
 
-    if (!submitResponse.ok) {
-      console.error(`VirusTotal submit failed: ${submitResponse.status}`);
+    if (!submit) {
       return { detected: false, maliciousCount: 0, suspiciousCount: 0, harmlessCount: 0, undetectedCount: 0, status: "failed", report: {} };
     }
 
-    const submitData = await submitResponse.json();
-    const analysisId = submitData.data?.id;
+    if (!submit.ok) {
+      return {
+        detected: false,
+        maliciousCount: 0,
+        suspiciousCount: 0,
+        harmlessCount: 0,
+        undetectedCount: 0,
+        status: submit.status === 429 ? "rate-limited" : "failed",
+        report: {},
+      };
+    }
+
+    const analysisId = submit.data?.data?.id;
     if (!analysisId) return null;
 
     let stats: any = null;
     let lastStatus = "queued";
-    for (let attempt = 0; attempt < 6; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
 
-      const analysisResponse = await fetch(
+      const poll = await fetchWithRetry(
         `${BASE_URL}/analyses/${analysisId}`,
-        { headers: { "x-apikey": apiKey } },
+        { method: "GET" },
+        apiKey,
       );
 
-      if (!analysisResponse.ok) {
+      if (!poll) {
         return { detected: false, maliciousCount: 0, suspiciousCount: 0, harmlessCount: 0, undetectedCount: 0, status: "failed", report: {} };
       }
 
-      const analysisData = await analysisResponse.json();
-      lastStatus = analysisData.data?.attributes?.status;
+      if (!poll.ok) {
+        return {
+          detected: false,
+          maliciousCount: 0,
+          suspiciousCount: 0,
+          harmlessCount: 0,
+          undetectedCount: 0,
+          status: poll.status === 429 ? "rate-limited" : "failed",
+          report: {},
+        };
+      }
+
+      lastStatus = poll.data?.data?.attributes?.status;
       if (lastStatus === "completed") {
-        stats = analysisData.data?.attributes?.stats;
+        stats = poll.data?.data?.attributes?.stats;
         if (stats) break;
       }
     }

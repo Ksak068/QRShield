@@ -4,6 +4,8 @@ import { runScanPipeline } from "@/services/scan-pipeline";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, logRequest } from "@/lib/rate-limit";
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const session = await auth();
   const userId = session?.user?.id;

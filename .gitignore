@@ -33,5 +33,8 @@ prisma/migrations/
 # ml datasets
 /ml/data/
 
+# local test artifacts
+/test-qr/
+
 # opencode
 .opencode/
