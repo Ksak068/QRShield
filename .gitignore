@@ -9,6 +9,7 @@
 # next.js
 /.next/
 /out/
+tsconfig.tsbuildinfo
 
 # production
 /build
@@ -28,6 +29,9 @@ yarn-error.log*
 
 # prisma
 prisma/migrations/
+
+# ml datasets
+/ml/data/
 
 # opencode
 .opencode/

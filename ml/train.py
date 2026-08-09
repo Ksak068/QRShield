@@ -3,11 +3,15 @@ QR_Shield Enterprise - Random Forest Model Training
 ====================================================
 Train offline, export to JSON for in-app inference.
 
-Usage: python ml/train.py
+Usage:
+  python ml/train.py                  # synthetic dataset (fallback)
+  python ml/train.py --data ml/data/training.csv   # real dataset from prepare_data.py
 
 Output: public/models/rf-model.json
 """
 
+import argparse
+import datetime
 import json
 import math
 import random
@@ -24,6 +28,11 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
     print("scikit-learn not installed. Install with: pip install scikit-learn")
+
+FEATURE_NAMES = [
+    "domainLength", "subdomainCount", "hasHttps", "entropy",
+    "specialCharRatio", "isIpAddress", "hasSuspiciousKeywords", "redirectCount",
+]
 
 
 def generate_synthetic_dataset(n_samples=5000):
@@ -63,46 +72,57 @@ def generate_synthetic_dataset(n_samples=5000):
 
 
 def export_tree_to_json(tree, feature_names):
-    """Convert sklearn tree to JSON format for ml-random-forest."""
+    """Convert sklearn tree to ml-cart node format for ml-random-forest."""
 
     def recurse(node):
         if tree.children_left[node] == -1 and tree.children_right[node] == -1:
+            counts = [float(c) for c in tree.value[node][0]]
             return {
-                "type": "leaf",
-                "value": int(np.argmax(tree.value[node][0])),
-                "probability": float(max(tree.value[node][0]) / sum(tree.value[node][0]))
+                "distribution": [counts],
             }
 
-        feature_idx = tree.feature[node]
+        feature_idx = int(tree.feature[node])
         threshold = float(tree.threshold[node])
-        left = recurse(tree.children_left[node])
-        right = recurse(tree.children_right[node])
+        left = recurse(int(tree.children_left[node]))
+        right = recurse(int(tree.children_right[node]))
 
         return {
-            "type": "split",
-            "feature": feature_names[feature_idx] if feature_idx < len(feature_names) else f"feature_{feature_idx}",
-            "threshold": threshold,
+            "splitValue": threshold,
+            "splitColumn": feature_idx,
+            "gain": float(tree.impurity[node]),
             "left": left,
-            "right": right
+            "right": right,
         }
 
     return recurse(0)
 
 
-def train_and_export():
+def train_and_export(data_path=None):
     """Main training function."""
-    print("Generating synthetic dataset...")
-    dataset = generate_synthetic_dataset(5000)
-    X = dataset[:, :-1]
-    y = dataset[:, -1]
+    if data_path:
+        print(f"Loading real dataset from {data_path}...")
+        rows = []
+        with open(data_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rows.append(row)
+        X = np.array([[float(row[f]) for f in FEATURE_NAMES] for row in rows])
+        y = np.array([int(row["label"]) for row in rows])
+        n_phishing = int(y.sum())
+        n_legit = len(y) - n_phishing
+        print(f"  {len(rows)} samples | phishing: {n_phishing} | legit: {n_legit}")
+    else:
+        print("Generating synthetic dataset...")
+        dataset = generate_synthetic_dataset(5000)
+        X = dataset[:, :-1]
+        y = dataset[:, -1]
+        n_phishing = int(np.sum(y))
+        n_legit = len(y) - n_phishing
 
-    feature_names = [
-        "domainLength", "subdomainCount", "hasHttps", "entropy",
-        "specialCharRatio", "isIpAddress", "hasSuspiciousKeywords", "redirectCount"
-    ]
+    feature_names = FEATURE_NAMES
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=42, stratify=y if len(np.unique(y)) > 1 else None
     )
 
     if SKLEARN_AVAILABLE:
@@ -113,7 +133,8 @@ def train_and_export():
             min_samples_split=5,
             min_samples_leaf=2,
             random_state=42,
-            n_jobs=-1
+            n_jobs=-1,
+            max_features=None
         )
         rf.fit(X_train, y_train)
 
@@ -123,22 +144,51 @@ def train_and_export():
         print("\nClassification Report:")
         print(classification_report(y_test, y_pred, target_names=["Safe", "Phishing"]))
 
+        n_features = len(feature_names)
+        tree_options = {
+            "gainFunction": "gini",
+            "splitFunction": "mean",
+            "minNumSamples": 3,
+            "maxDepth": None,
+            "gainThreshold": 0.01,
+            "kind": "classifier",
+        }
+
         trees_json = []
         for tree in rf.estimators_:
-            trees_json.append(export_tree_to_json(tree.tree_, feature_names))
+            trees_json.append({
+                "options": tree_options,
+                "root": export_tree_to_json(tree.tree_, feature_names),
+                "name": "DTClassifier",
+            })
 
+        # ml-random-forest expects a "name" at top level plus a "baseModel"
+        # wrapper. indexes[i] selects the feature columns tree i was trained on;
+        # identity selection keeps sklearn's global feature indices intact.
         model_json = {
-            "nEstimators": len(rf.estimators_),
-            "nClasses": 2,
-            "classes": ["safe", "phishing"],
-            "featureNames": feature_names,
-            "trees": trees_json,
+            "name": "RFClassifier",
+            "baseModel": {
+                "indexes": [list(range(n_features)) for _ in rf.estimators_],
+                "n": n_features,
+                "replacement": False,
+                "maxFeatures": 1.0,
+                "nEstimators": len(rf.estimators_),
+                "isClassifier": True,
+                "seed": 42,
+                "estimators": trees_json,
+                "useSampleBagging": False,
+                "maxSamples": None,
+                "treeOptions": tree_options,
+            },
             "metadata": {
                 "accuracy": round(float(accuracy), 4),
                 "nSamples": len(X_train),
-                "nFeatures": len(feature_names),
+                "nFeatures": n_features,
                 "modelType": "RandomForestClassifier",
-                "trainedFor": "QR_Shield Enterprise"
+                "trainedFor": "QR_Shield Enterprise",
+                "trainedOn": data_path or "synthetic",
+                "trainedDate": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "balance": {"phishing": int(n_phishing), "legit": int(n_legit)},
             }
         }
     else:
@@ -191,4 +241,8 @@ def train_and_export():
 
 
 if __name__ == "__main__":
-    train_and_export()
+    parser = argparse.ArgumentParser(description="Train QR_Shield Random Forest model")
+    parser.add_argument("--data", type=str, default=None,
+                        help="Path to CSV dataset (from prepare_data.py). Omit for synthetic data.")
+    args = parser.parse_args()
+    train_and_export(args.data)

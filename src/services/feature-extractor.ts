@@ -63,7 +63,8 @@ async function getRedirectCount(url: string): Promise<number> {
 
 export async function extractFeatures(url: string): Promise<ExtractedFeatures> {
   const parsed = new URL(url);
-  const hostname = parsed.hostname;
+  const rawHostname = parsed.hostname;
+  const hostname = rawHostname.startsWith("www.") ? rawHostname.slice(4) : rawHostname;
   const isIp = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
   const tld = hostname.split(".").pop() || "";
 
@@ -75,7 +76,7 @@ export async function extractFeatures(url: string): Promise<ExtractedFeatures> {
     domainLength: hostname.length,
     subdomainCount: countSubdomains(hostname),
     hasHttps: parsed.protocol === "https:",
-    entropy: shannonEntropy(url),
+    entropy: shannonEntropy(hostname),
     specialCharRatio,
     isIpAddress: isIp,
     hasSuspiciousKeywords: hasSuspiciousKeywords(url),

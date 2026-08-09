@@ -66,7 +66,7 @@ export async function predict(
   }
 
   const vector = featuresToVector(features);
-  const predictions = model.predict([vector]);
+  const predictions = model.predictProbability([vector], 1);
   const probability = predictions[0] as number;
 
   return {
