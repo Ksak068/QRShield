@@ -24,6 +24,17 @@ PHISHTANK_URL = "https://github.com/arvindeybram/phishing/raw/refs/heads/master/
 MAX_PHISHING = 60000
 MAX_LEGIT = 60000
 
+# Realistic legit URL paths (no suspicious keywords) so the model learns
+# that URLs with paths are normal; PhishTank URLs also carry paths.
+LEGIT_PATHS = [
+    "/", "/index.html", "/en/", "/about", "/contact", "/products",
+    "/product/12345", "/docs", "/help", "/faq", "/blog", "/blog/post-1",
+    "/wiki/Index", "/wiki/Page_Title", "/watch?v=abc123", "/item?id=42",
+    "/user/profile", "/members", "/downloads",
+    "/api/v1/status", "/search?q=hello+world", "/category/news",
+    "/news/2026/08/headline", "/events/upcoming", "/pricing", "/terms",
+]
+
 SUSPICIOUS_KEYWORDS = [
     "login", "signin", "verify", "update", "confirm", "secure",
     "account", "bank", "paypal", "password", "credential", "authenticate",
@@ -88,7 +99,7 @@ def extract_features(url: str) -> list:
         len(hostname),
         count_subdomains(hostname),
         1 if parsed.scheme == "https" else 0,
-        shannon_entropy(hostname),
+        shannon_entropy(url),
         special_char_ratio,
         1 if is_ip else 0,
         1 if has_suspicious_keywords(url) else 0,
@@ -179,12 +190,25 @@ def main():
     random.shuffle(variants)
     variants = variants[:MAX_LEGIT]
 
+    # Legit rows with realistic paths: QR codes point at full URLs, so the
+    # model must learn that paths are normal (avoids false positives like
+    # github.com/User/Repo while still catching path-heavy phishing).
+    path_rows = []
+    for domain in legit[: len(LEGIT_PATHS) * 8000]:
+        base = urlparse(domain).hostname or ""
+        for path in LEGIT_PATHS:
+            variant = f"https://{base}{path}"
+            if domain_of(variant) not in legit_phish_domains:
+                path_rows.append(variant)
+    random.shuffle(path_rows)
+    path_rows = path_rows[:MAX_LEGIT]
+
     rows = []
     for url in phishing:
         rows.append(feature_row(url, label=1))
     print(f"  phishing rows: {len(rows)}")
 
-    for url in legit + variants:
+    for url in legit + variants + path_rows:
         rows.append(feature_row(url, label=0))
     print(f"  legit rows: {len(rows) - len(phishing)}")
 

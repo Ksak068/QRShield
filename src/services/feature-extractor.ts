@@ -76,7 +76,7 @@ export async function extractFeatures(url: string): Promise<ExtractedFeatures> {
     domainLength: hostname.length,
     subdomainCount: countSubdomains(hostname),
     hasHttps: parsed.protocol === "https:",
-    entropy: shannonEntropy(hostname),
+    entropy: shannonEntropy(url),
     specialCharRatio,
     isIpAddress: isIp,
     hasSuspiciousKeywords: hasSuspiciousKeywords(url),

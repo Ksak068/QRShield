@@ -128,10 +128,10 @@ def train_and_export(data_path=None):
     if SKLEARN_AVAILABLE:
         print("Training Random Forest model...")
         rf = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=15,
-            min_samples_split=5,
-            min_samples_leaf=2,
+            n_estimators=40,
+            max_depth=10,
+            min_samples_split=10,
+            min_samples_leaf=5,
             random_state=42,
             n_jobs=-1,
             max_features=None
@@ -234,7 +234,7 @@ def train_and_export(data_path=None):
 
     output_path = "public/models/rf-model.json"
     with open(output_path, "w") as f:
-        json.dump(model_json, f, indent=2)
+        json.dump(model_json, f, separators=(",", ":"))
 
     print(f"\nModel exported to: {output_path}")
     print("Model ready for in-app inference.")

@@ -30,7 +30,7 @@ function features(url) {
     h.length,
     subs,
     u.protocol === "https:" ? 1 : 0,
-    entropy(h),
+    entropy(url),
     Math.round((sc / url.length) * 1000) / 1000,
     isIp ? 1 : 0,
     kw,
