@@ -8,12 +8,22 @@ interface VtResponse {
   suspiciousCount: number;
   harmlessCount: number;
   undetectedCount: number;
+  status: "ok" | "not-configured" | "failed";
   report: Record<string, unknown>;
+}
+
+function encodeBase64Url(input: string): string {
+  return btoa(unescape(encodeURIComponent(input)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 export async function lookupUrl(url: string): Promise<VtResponse | null> {
   const apiKey = process.env.VIRUSTOTAL_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    return { detected: false, maliciousCount: 0, suspiciousCount: 0, harmlessCount: 0, undetectedCount: 0, status: "not-configured", report: {} };
+  }
 
   const normalized = url.toLowerCase().replace(/\/+$/, "");
 
@@ -26,10 +36,7 @@ export async function lookupUrl(url: string): Promise<VtResponse | null> {
   }
 
   try {
-    const encodedUrl = btoa(unescape(encodeURIComponent(normalized)))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
+    const encodedUrl = encodeBase64Url(normalized);
 
     const submitResponse = await fetch(`${BASE_URL}/urls`, {
       method: "POST",
@@ -40,27 +47,41 @@ export async function lookupUrl(url: string): Promise<VtResponse | null> {
       body: `url=${encodeURIComponent(normalized)}`,
     });
 
-    if (!submitResponse.ok) return null;
+    if (!submitResponse.ok) {
+      console.error(`VirusTotal submit failed: ${submitResponse.status}`);
+      return { detected: false, maliciousCount: 0, suspiciousCount: 0, harmlessCount: 0, undetectedCount: 0, status: "failed", report: {} };
+    }
 
     const submitData = await submitResponse.json();
     const analysisId = submitData.data?.id;
     if (!analysisId) return null;
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    let stats: any = null;
+    let lastStatus = "queued";
+    for (let attempt = 0; attempt < 6; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const analysisResponse = await fetch(
-      `${BASE_URL}/analyses/${analysisId}`,
-      {
-        headers: { "x-apikey": apiKey },
-      },
-    );
+      const analysisResponse = await fetch(
+        `${BASE_URL}/analyses/${analysisId}`,
+        { headers: { "x-apikey": apiKey } },
+      );
 
-    if (!analysisResponse.ok) return null;
+      if (!analysisResponse.ok) {
+        return { detected: false, maliciousCount: 0, suspiciousCount: 0, harmlessCount: 0, undetectedCount: 0, status: "failed", report: {} };
+      }
 
-    const analysisData = await analysisResponse.json();
-    const stats = analysisData.data?.attributes?.stats;
+      const analysisData = await analysisResponse.json();
+      lastStatus = analysisData.data?.attributes?.status;
+      if (lastStatus === "completed") {
+        stats = analysisData.data?.attributes?.stats;
+        if (stats) break;
+      }
+    }
 
-    if (!stats) return null;
+    if (!stats) {
+      console.warn(`VirusTotal analysis still ${lastStatus} after polling`);
+      return { detected: false, maliciousCount: 0, suspiciousCount: 0, harmlessCount: 0, undetectedCount: 0, status: "failed", report: {} };
+    }
 
     const result: VtResponse = {
       detected: (stats.malicious || 0) > 0,
@@ -68,7 +89,8 @@ export async function lookupUrl(url: string): Promise<VtResponse | null> {
       suspiciousCount: stats.suspicious || 0,
       harmlessCount: stats.harmless || 0,
       undetectedCount: stats.undetected || 0,
-      report: analysisData,
+      status: "ok",
+      report: { stats },
     };
 
     await prisma.threatCache.upsert({
@@ -84,6 +106,6 @@ export async function lookupUrl(url: string): Promise<VtResponse | null> {
     return result;
   } catch (error) {
     console.error("VirusTotal lookup failed:", error);
-    return null;
+    return { detected: false, maliciousCount: 0, suspiciousCount: 0, harmlessCount: 0, undetectedCount: 0, status: "failed", report: {} };
   }
 }

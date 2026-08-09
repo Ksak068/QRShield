@@ -19,8 +19,10 @@ export interface ScanPipelineResult {
   rfLabel: string;
   gptScore: number;
   gptLabel: string;
+  gptStatus: "ok" | "fallback" | "unavailable";
   vtDetected: boolean;
   vtMaliciousCount: number;
+  vtStatus: "ok" | "not-configured" | "failed";
   sbThreat: boolean;
   sbThreatTypes: string[];
   riskScore: number;
@@ -64,6 +66,9 @@ export async function runScanPipeline(
     });
 
     const gptResult = await classifyWithGPT(normalizedUrl, features);
+    const gptStatus: "ok" | "fallback" | "unavailable" = gptResult.usedFallback
+      ? "fallback"
+      : "ok";
 
     await prisma.scan.update({
       where: { id: scan.id },
@@ -81,6 +86,7 @@ export async function runScanPipeline(
     const vtResult = await vtLookup(normalizedUrl);
     const vtDetected = vtResult?.detected || false;
     const vtMaliciousCount = vtResult?.maliciousCount || 0;
+    const vtStatus = vtResult?.status || "failed";
 
     await prisma.scan.update({
       where: { id: scan.id },
@@ -149,8 +155,10 @@ export async function runScanPipeline(
       rfLabel: rfResult.label,
       gptScore: gptResult.riskScore,
       gptLabel: gptResult.riskLevel,
+      gptStatus,
       vtDetected,
       vtMaliciousCount,
+      vtStatus,
       sbThreat,
       sbThreatTypes,
       riskScore: riskResult.riskScore,

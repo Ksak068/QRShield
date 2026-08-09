@@ -106,23 +106,27 @@ async function callGPT(model: string, url: string, features: ExtractedFeatures):
   }
 }
 
+export interface GptClassificationResult extends GptClassification {
+  usedFallback: boolean;
+}
+
 export async function classifyWithGPT(
   url: string,
   features: ExtractedFeatures,
-): Promise<GptClassification> {
+): Promise<GptClassificationResult> {
   if (!process.env.OPENROUTER_API_KEY) {
-    return heuristicFallback(features);
+    return { ...heuristicFallback(features), usedFallback: true };
   }
 
   const primary = await callGPT(PRIMARY_MODEL, url, features);
-  if (primary) return primary;
+  if (primary) return { ...primary, usedFallback: false };
 
   console.warn("Primary GPT model failed, trying fallback model...");
   const fallback = await callGPT(FALLBACK_MODEL, url, features);
-  if (fallback) return fallback;
+  if (fallback) return { ...fallback, usedFallback: false };
 
   console.warn("Both GPT models failed, using heuristic fallback");
-  return heuristicFallback(features);
+  return { ...heuristicFallback(features), usedFallback: true };
 }
 
 export async function generateExplanation(

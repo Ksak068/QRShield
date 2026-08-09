@@ -28,8 +28,10 @@ type ScanResult = {
   riskLevel: string;
   rfPrediction: number;
   rfLabel: string;
+  gptStatus?: string;
   vtDetected: boolean;
   vtMaliciousCount: number;
+  vtStatus?: string;
   sbThreat: boolean;
   sbThreatTypes: string[];
   aiExplanation: {
@@ -299,11 +301,25 @@ export default function ScannerPage() {
                   </p>
                 </div>
                 <div className="rounded-lg bg-muted p-4">
+                  <p className="text-sm font-medium">AI Analysis (GPT)</p>
+                  <p className="text-sm text-muted-foreground">
+                    {result.gptStatus === "ok"
+                      ? `${result.riskLevel === "SAFE" ? "Safe" : result.riskLevel === "SUSPICIOUS" ? "Suspicious" : "Phishing"} (score ${result.riskScore}/100)`
+                      : result.gptStatus === "fallback"
+                        ? "Heuristic fallback (AI model unavailable)"
+                        : "AI unavailable — heuristic rules used"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted p-4">
                   <p className="text-sm font-medium">VirusTotal</p>
                   <p className="text-sm text-muted-foreground">
-                    {result.vtDetected
-                      ? `${result.vtMaliciousCount} engines detected`
-                      : "No threats detected"}
+                    {result.vtStatus === "ok"
+                      ? result.vtDetected
+                        ? `${result.vtMaliciousCount} engines detected`
+                        : "No threats detected"
+                      : result.vtStatus === "not-configured"
+                        ? "Not configured (VIRUSTOTAL_API_KEY missing)"
+                        : "Lookup failed — try again"}
                   </p>
                 </div>
                 <div className="rounded-lg bg-muted p-4">
