@@ -51,6 +51,43 @@ export function decodeFromCanvas(
   return decodeFromImageData(imageData);
 }
 
+export async function decodeFromFile(file: File): Promise<DecodeResult | null> {
+  let bitmap: ImageBitmap | null = null;
+  let image: HTMLImageElement | null = null;
+  let objectUrl: string | null = null;
+
+  try {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+
+    if ("createImageBitmap" in window) {
+      bitmap = await createImageBitmap(file);
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      context.drawImage(bitmap, 0, 0);
+    } else {
+      objectUrl = URL.createObjectURL(file);
+      image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image!.onload = () => resolve();
+        image!.onerror = () => reject(new Error("Failed to load image"));
+        image!.src = objectUrl!;
+      });
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      context.drawImage(image, 0, 0);
+    }
+
+    return decodeFromCanvas(canvas, canvas.width, canvas.height);
+  } catch {
+    return null;
+  } finally {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    bitmap?.close();
+  }
+}
+
 export function normalizeUrl(raw: string): string {
   let url = raw.trim();
 

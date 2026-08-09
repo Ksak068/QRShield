@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
+import { decodeFromFile } from "@/services/qr-decoder";
 
 interface UseScannerOptions {
   onScanSuccess?: (content: string) => void;
@@ -56,35 +57,24 @@ export function useScanner(options: UseScannerOptions = {}) {
   }, []);
 
   const scanFromFile = useCallback(
-    (file: File) => {
+    async (file: File) => {
       setError(null);
       setIsScanning(true);
 
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const imageUrl = e.target?.result as string;
-        if (!imageUrl) {
-          setError("Failed to read image");
-          setIsScanning(false);
+      try {
+        const result = await decodeFromFile(file);
+        if (!result) {
+          setError("No QR code found in image");
+          options.onScanError?.("No QR code found");
           return;
         }
-
-        try {
-          const tempScanner = new Html5Qrcode("qr-reader-file");
-          const result = await tempScanner.scanFile(file, true);
-          options.onScanSuccess?.(result);
-          setIsScanning(false);
-        } catch {
-          setError("No QR code found in image");
-          setIsScanning(false);
-          options.onScanError?.("No QR code found");
-        }
-      };
-      reader.onerror = () => {
-        setError("Failed to read file");
+        options.onScanSuccess?.(result.content);
+      } catch {
+        setError("No QR code found in image");
+        options.onScanError?.("No QR code found");
+      } finally {
         setIsScanning(false);
-      };
-      reader.readAsDataURL(file);
+      }
     },
     [options],
   );

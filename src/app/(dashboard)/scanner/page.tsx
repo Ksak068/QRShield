@@ -88,6 +88,7 @@ export default function ScannerPage() {
     if (file) {
       scanFromFile(file);
       setMode("upload");
+      e.target.value = "";
     }
   };
 
@@ -361,8 +362,6 @@ export default function ScannerPage() {
           </CardContent>
         </Card>
       )}
-
-      <div id="qr-reader-file" className="hidden" />
     </div>
   );
 }
