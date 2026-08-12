@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { ExtractedFeatures, RiskLevel, AiExplanation, GptClassification } from "@/types";
 
-const PRIMARY_MODEL = process.env.OPENROUTER_PRIMARY_MODEL || "openai/gpt-oss-120b:free";
+const PRIMARY_MODEL = process.env.OPENROUTER_PRIMARY_MODEL || "nvidia/nemotron-3-super-120b-a12b:free";
 const FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "openai/gpt-oss-20b:free";
 
 const openai = new OpenAI({
