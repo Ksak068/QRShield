@@ -24,7 +24,6 @@ export function Navbar() {
       ]
     : [
         { href: "/", label: "Home" },
-        { href: "/login", label: "Login" },
       ];
 
   return (
