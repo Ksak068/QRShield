@@ -51,7 +51,64 @@ export async function runScanPipeline(
   });
 
   try {
-    const features = await extractFeatures(normalizedUrl);
+    const EMPTY_FEATURES: ExtractedFeatures = {
+      domain: "",
+      domainLength: 0,
+      subdomainCount: 0,
+      hasHttps: false,
+      entropy: 0,
+      specialCharRatio: 0,
+      isIpAddress: false,
+      hasSuspiciousKeywords: false,
+      tld: "",
+      domainAge: null,
+      redirectCount: 0,
+    };
+
+    let features: ExtractedFeatures;
+    let isNonUrl = false;
+    try {
+      features = await extractFeatures(normalizedUrl);
+    } catch {
+      isNonUrl = true;
+      features = EMPTY_FEATURES;
+    }
+
+    if (isNonUrl) {
+      const aiExplanation = {
+        summary: "QR content is not a URL — no threat analysis performed.",
+        reasons: ["The scanned QR code does not contain a valid web address."],
+        recommendation: "This QR contains plain text, not a URL.",
+      };
+      await prisma.scan.update({
+        where: { id: scan.id },
+        data: {
+          riskScore: 0,
+          riskLevel: "SAFE" as RiskLevel,
+          status: "COMPLETED" as ScanStatus,
+          aiExplanation: aiExplanation as any,
+        },
+      });
+      return {
+        scanId: scan.id,
+        extractedUrl,
+        normalizedUrl,
+        features,
+        rfPrediction: 0,
+        rfLabel: "SAFE",
+        gptScore: 0,
+        gptLabel: "SAFE",
+        gptStatus: "ok",
+        vtDetected: false,
+        vtMaliciousCount: 0,
+        vtStatus: "ok",
+        sbThreat: false,
+        sbThreatTypes: [],
+        riskScore: 0,
+        riskLevel: "SAFE",
+        aiExplanation,
+      };
+    }
 
     await prisma.scan.update({
       where: { id: scan.id },

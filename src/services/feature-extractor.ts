@@ -36,31 +36,6 @@ function hasSuspiciousKeywords(text: string): boolean {
   return SUSPICIOUS_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-async function getRedirectCount(url: string): Promise<number> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(url, {
-      method: "HEAD",
-      redirect: "manual",
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-
-    let count = 0;
-    if (
-      response.status >= 300 &&
-      response.status < 400 &&
-      response.headers.has("location")
-    ) {
-      count = 1;
-    }
-    return count;
-  } catch {
-    return 0;
-  }
-}
-
 export async function extractFeatures(url: string): Promise<ExtractedFeatures> {
   const parsed = new URL(url);
   const rawHostname = parsed.hostname;
@@ -82,6 +57,6 @@ export async function extractFeatures(url: string): Promise<ExtractedFeatures> {
     hasSuspiciousKeywords: hasSuspiciousKeywords(url),
     tld,
     domainAge: null,
-    redirectCount: await getRedirectCount(url),
+    redirectCount: 0,
   };
 }
