@@ -251,54 +251,57 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <Key className="mb-2 h-6 w-6 text-emerald-500" />
-          <CardTitle>API Keys</CardTitle>
-          <CardDescription>
-            Configure third-party security APIs for enhanced threat detection
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleKeySave} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="VIRUSTOTAL_API_KEY">VirusTotal API Key</Label>
-              <Input
-                id="VIRUSTOTAL_API_KEY"
-                name="VIRUSTOTAL_API_KEY"
-                type="password"
-                placeholder="Enter your VirusTotal API key"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="OPENROUTER_API_KEY">OpenRouter API Key</Label>
-              <Input
-                id="OPENROUTER_API_KEY"
-                name="OPENROUTER_API_KEY"
-                type="password"
-                placeholder="Enter your OpenRouter API key"
-              />
-            </div>
-            <Button type="submit" disabled={keySaving} className="gap-2">
-              <Save className="h-4 w-4" />
-              {keySaving ? "Saving..." : "Save API Keys"}
-            </Button>
-            {keySaved && (
-              <span className="ml-3 text-sm text-emerald-500">
-                API keys saved
-              </span>
-            )}
-          </form>
-        </CardContent>
-      </Card>
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <Key className="mb-2 h-6 w-6 text-emerald-500" />
+            <CardTitle>API Keys</CardTitle>
+            <CardDescription>
+              Configure third-party security APIs for enhanced threat detection
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleKeySave} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="VIRUSTOTAL_API_KEY">VirusTotal API Key</Label>
+                <Input
+                  id="VIRUSTOTAL_API_KEY"
+                  name="VIRUSTOTAL_API_KEY"
+                  type="password"
+                  placeholder="Enter your VirusTotal API key"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="OPENROUTER_API_KEY">OpenRouter API Key</Label>
+                <Input
+                  id="OPENROUTER_API_KEY"
+                  name="OPENROUTER_API_KEY"
+                  type="password"
+                  placeholder="Enter your OpenRouter API key"
+                />
+              </div>
+              <Button type="submit" disabled={keySaving} className="gap-2">
+                <Save className="h-4 w-4" />
+                {keySaving ? "Saving..." : "Save API Keys"}
+              </Button>
+              {keySaved && (
+                <span className="ml-3 text-sm text-emerald-500">
+                  API keys saved
+                </span>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card>
-        <CardHeader>
-          <Palette className="mb-2 h-6 w-6 text-emerald-500" />
-          <CardTitle>Appearance</CardTitle>
-          <CardDescription>Customize the look and feel</CardDescription>
-        </CardHeader>
-        <CardContent>
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <Palette className="mb-2 h-6 w-6 text-emerald-500" />
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>Customize the look and feel</CardDescription>
+          </CardHeader>
+          <CardContent>
           <div className="flex items-center gap-4">
             <Button
               type="button"
@@ -322,8 +325,9 @@ export default function SettingsPage() {
               System
             </Button>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {isAdmin && (
         <div className="space-y-6">
