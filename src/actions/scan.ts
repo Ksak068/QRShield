@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { notifyAdmins } from "@/lib/notifications";
+import { notifyAdmins, createNotification } from "@/lib/notifications";
 
 export async function getUserScans(limit = 20, offset = 0) {
   const session = await auth();
@@ -72,6 +72,15 @@ export async function deleteScan(scanId: string) {
         },
       });
       await notifyAdmins("scan.delete", "Scan Deleted by Admin", `A scan was deleted by an admin.`, `/admin`);
+      if (scan.userId && scan.userId !== session.user.id) {
+        await createNotification(
+          "scan.delete",
+          "Scan Removed",
+          `Your scan of ${(scan.extractedUrl || "").slice(0, 60)} was deleted by an admin.`,
+          `/history`,
+          scan.userId,
+        );
+      }
     } catch {
       // non-critical
     }

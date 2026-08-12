@@ -6,7 +6,7 @@ import { lookupUrl as vtLookup } from "@/services/virus-total";
 import { lookupUrl as sbLookup } from "@/services/safe-browsing";
 import { classifyWithGPT } from "@/services/ai-explainer";
 import { calculateRisk } from "@/services/risk-engine";
-import { notifyAdmins } from "@/lib/notifications";
+import { notifyAdmins, createNotification } from "@/lib/notifications";
 import type { ExtractedFeatures, RiskEngineResult } from "@/types";
 import type { RiskLevel, ScanStatus } from "@prisma/client";
 
@@ -149,12 +149,12 @@ export async function runScanPipeline(
 
     if (riskResult.riskLevel === "PHISHING" || riskResult.riskLevel === "SUSPICIOUS") {
       const notifType = riskResult.riskLevel === "PHISHING" ? "scan.phishing" : "scan.suspicious";
-      await notifyAdmins(
-        notifType,
-        riskResult.riskLevel === "PHISHING" ? "Phishing QR Detected" : "Suspicious QR Detected",
-        `Risk score ${riskResult.riskScore} — ${extractedUrl.slice(0, 80)}`,
-        `/admin`,
-      );
+      const title = riskResult.riskLevel === "PHISHING" ? "Phishing QR Detected" : "Suspicious QR Detected";
+      const message = `Risk score ${riskResult.riskScore} — ${extractedUrl.slice(0, 80)}`;
+      await notifyAdmins(notifType, title, message, `/admin`);
+      if (userId) {
+        await createNotification(notifType, title, message, `/history`, userId);
+      }
     }
 
     return {

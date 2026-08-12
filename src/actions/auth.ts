@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { signOut } from "@/lib/auth";
 import { registerSchema } from "@/validations/auth";
-import { notifyAdmins } from "@/lib/notifications";
+import { notifyAdmins, createNotification } from "@/lib/notifications";
 import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { checkRateLimit, logRequest } from "@/lib/rate-limit";
@@ -47,7 +47,7 @@ export async function registerUser(formData: FormData) {
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
@@ -65,6 +65,13 @@ export async function registerUser(formData: FormData) {
   });
 
   await notifyAdmins("user.registered", "New User Registered", `${parsed.data.email} (${parsed.data.role})`, `/admin`);
+  await createNotification(
+    "user.registered",
+    "Welcome to QR_Shield",
+    "Your account is ready. Scan QR codes to check them for threats.",
+    `/scanner`,
+    user.id,
+  );
 
   return { success: true };
 }

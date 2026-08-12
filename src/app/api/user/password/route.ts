@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 import bcrypt from "bcryptjs";
 
 export async function PATCH(request: NextRequest) {
@@ -50,6 +51,14 @@ export async function PATCH(request: NextRequest) {
       where: { id: session.user.id },
       data: { passwordHash },
     });
+
+    await createNotification(
+      "user.password",
+      "Password Changed",
+      "Your password was changed. If this wasn't you, contact an administrator immediately.",
+      `/settings`,
+      session.user.id,
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

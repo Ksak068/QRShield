@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-type NotificationType = "user.suspend" | "user.unsuspend" | "user.delete" | "user.promote" | "user.demote" | "scan.delete" | "scan.phishing" | "scan.suspicious" | "user.registered";
+type NotificationType = "user.suspend" | "user.unsuspend" | "user.delete" | "user.promote" | "user.demote" | "user.password" | "scan.delete" | "scan.phishing" | "scan.suspicious" | "user.registered";
 
 export async function createNotification(
   type: NotificationType,
