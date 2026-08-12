@@ -3,15 +3,17 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { Save, Key, Palette, User, Lock, Eye, EyeOff } from "lucide-react";
+import { Save, Key, Palette, User, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AdminSettings } from "@/components/admin/settings";
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
   const { theme, setTheme } = useTheme();
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -322,6 +324,16 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-emerald-500" />
+            <h2 className="text-xl font-semibold">Administration</h2>
+          </div>
+          <AdminSettings />
+        </div>
+      )}
     </div>
   );
 }

@@ -25,18 +25,18 @@ export async function GET() {
   ]);
 
   const scansByDay = await prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
-    SELECT DATE(created_at) as date, COUNT(*)::int as count
+    SELECT DATE("createdAt") as date, COUNT(*)::int as count
     FROM "Scan"
-    WHERE created_at >= NOW() - INTERVAL '30 days'
-    GROUP BY DATE(created_at)
+    WHERE "createdAt" >= NOW() - INTERVAL '30 days'
+    GROUP BY DATE("createdAt")
     ORDER BY date ASC
   `;
 
   const scansByMonth = await prisma.$queryRaw<Array<{ month: string; count: bigint }>>`
-    SELECT TO_CHAR(created_at, 'YYYY-MM') as month, COUNT(*)::int as count
+    SELECT TO_CHAR("createdAt", 'YYYY-MM') as month, COUNT(*)::int as count
     FROM "Scan"
-    WHERE created_at >= NOW() - INTERVAL '12 months'
-    GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+    WHERE "createdAt" >= NOW() - INTERVAL '12 months'
+    GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
     ORDER BY month ASC
   `;
 

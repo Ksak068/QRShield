@@ -23,7 +23,6 @@ import { PieChartWidget } from "@/components/charts/pie-chart";
 import { LineChartWidget } from "@/components/charts/line-chart";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { deleteScan } from "@/actions/scan";
-import { AdminSettings } from "@/components/admin/settings";
 
 interface AdminUser {
   id: string;
@@ -86,7 +85,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [scans, setScans] = useState<AdminScan[]>([]);
-  const [activeTab, setActiveTab] = useState<"users" | "scans" | "analytics" | "logs" | "settings">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "scans" | "analytics" | "logs">("users");
   const [loading, setLoading] = useState(true);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [topDomains, setTopDomains] = useState<TopDomain[]>([]);
@@ -143,7 +142,7 @@ export default function AdminPage() {
   }, [logTypeFilter, logActionFilter]);
 
   const fetchData = useCallback(async () => {
-    const [usersData, analyticsData, scansData, healthData] = await Promise.all([
+    const [usersData, analyticsData, scansData, healthData] = await Promise.allSettled([
       fetch("/api/admin/users").then((r) => r.json()),
       fetch("/api/admin/analytics").then((r) => r.json()),
       fetch("/api/scan?limit=50").then((r) => r.json()),
@@ -151,10 +150,11 @@ export default function AdminPage() {
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
     ]);
-    setUsers(usersData || []);
-    setAnalytics(analyticsData);
-    setScans(scansData.scans || []);
-    setHealth(healthData);
+
+    if (usersData.status === "fulfilled") setUsers(usersData.value || []);
+    if (analyticsData.status === "fulfilled") setAnalytics(analyticsData.value);
+    if (scansData.status === "fulfilled") setScans(scansData.value.scans || []);
+    if (healthData.status === "fulfilled") setHealth(healthData.value);
 
     fetch("/api/admin/top-domains")
       .then((r) => r.json())
@@ -323,7 +323,7 @@ export default function AdminPage() {
       </div>
 
       <div className="flex gap-2 border-b">
-        {(["users", "scans", "analytics", "logs", "settings"] as const).map((tab) => (
+        {(["users", "scans", "analytics", "logs"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -339,9 +339,7 @@ export default function AdminPage() {
                 ? "All Scans"
                 : tab === "analytics"
                   ? "Analytics"
-                  : tab === "logs"
-                    ? "Logs"
-                    : "Settings"}
+                  : "Logs"}
           </button>
         ))}
       </div>
@@ -938,8 +936,6 @@ export default function AdminPage() {
             )}
           </CardContent>
         </Card>
-      ) : activeTab === "settings" ? (
-        <AdminSettings />
       ) : null}
  
       <ConfirmDialog

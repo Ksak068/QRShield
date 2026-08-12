@@ -2,6 +2,22 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+export const maxDuration = 30;
+
+async function pingDatabase(): Promise<boolean> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return true;
+    } catch {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+      }
+    }
+  }
+  return false;
+}
+
 export async function GET() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
@@ -10,35 +26,24 @@ export async function GET() {
 
   const start = Date.now();
 
-  try {
-    await prisma.$queryRaw`SELECT 1`;
+  const [dbConnected, vtRow, orRow] = await Promise.all([
+    pingDatabase(),
+    prisma.setting.findUnique({ where: { key: "VIRUSTOTAL_API_KEY" } }).catch(() => null),
+    prisma.setting.findUnique({ where: { key: "OPENROUTER_API_KEY" } }).catch(() => null),
+  ]);
 
-    const vtKey = await prisma.setting.findUnique({
-      where: { key: "VIRUSTOTAL_API_KEY" },
-    });
-    const orKey = await prisma.setting.findUnique({
-      where: { key: "OPENROUTER_API_KEY" },
-    });
+  const vtConfigured = !!(process.env.VIRUSTOTAL_API_KEY || vtRow?.value);
+  const orConfigured = !!(process.env.OPENROUTER_API_KEY || orRow?.value);
 
-    return NextResponse.json({
-      status: "healthy",
+  return NextResponse.json(
+    {
+      status: dbConnected ? "healthy" : "degraded",
       uptime: process.uptime(),
-      dbConnected: true,
-      vtConfigured: !!(vtKey?.value),
-      orConfigured: !!(orKey?.value),
+      dbConnected,
+      vtConfigured,
+      orConfigured,
       responseTime: Date.now() - start,
-    });
-  } catch {
-    return NextResponse.json(
-      {
-        status: "degraded",
-        uptime: process.uptime(),
-        dbConnected: false,
-        vtConfigured: false,
-        orConfigured: false,
-        responseTime: Date.now() - start,
-      },
-      { status: 503 },
-    );
-  }
+    },
+    { status: dbConnected ? 200 : 503 },
+  );
 }
