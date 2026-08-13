@@ -8,7 +8,6 @@ import {
   Trash2,
   Download,
   BarChart3,
-  QrCode,
   Search,
   ArrowUpDown,
   ScrollText,
@@ -54,8 +53,6 @@ interface Analytics {
 
 interface HealthStatus {
   status: string;
-  vtConfigured: boolean;
-  orConfigured: boolean;
   dbConnected: boolean;
   uptime?: number;
 }
@@ -131,15 +128,18 @@ export default function AdminPage() {
     [],
   );
 
-  const fetchLogs = useCallback(async (page = 0) => {
-    const params = new URLSearchParams({ limit: "50", offset: String(page * 50) });
-    if (logTypeFilter) params.set("type", logTypeFilter);
-    if (logActionFilter) params.set("action", logActionFilter);
-    const res = await fetch(`/api/admin/logs?${params}`);
-    const data = await res.json();
-    setLogs(data.logs || []);
-    setLogTotal(data.total || 0);
-  }, [logTypeFilter, logActionFilter]);
+  const fetchLogs = useCallback(
+    async (page = 0) => {
+      const params = new URLSearchParams({ limit: "50", offset: String(page * 50) });
+      if (logTypeFilter) params.set("type", logTypeFilter);
+      if (logActionFilter) params.set("action", logActionFilter);
+      const res = await fetch(`/api/admin/logs?${params}`);
+      const data = await res.json();
+      setLogs(data.logs || []);
+      setLogTotal(data.total || 0);
+    },
+    [logTypeFilter, logActionFilter],
+  );
 
   const fetchData = useCallback(async () => {
     const [usersData, analyticsData, scansData, healthData] = await Promise.allSettled([
@@ -172,12 +172,21 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (activeTab === "users") {
-      fetch("/api/admin/users").then(r => r.json()).then(d => setUsers(d || []));
+      fetch("/api/admin/users")
+        .then((r) => r.json())
+        .then((d) => setUsers(d || []));
     } else if (activeTab === "scans") {
-      fetch("/api/scan?limit=50").then(r => r.json()).then(d => setScans(d.scans || []));
+      fetch("/api/scan?limit=50")
+        .then((r) => r.json())
+        .then((d) => setScans(d.scans || []));
     } else if (activeTab === "analytics") {
-      fetch("/api/admin/analytics").then(r => r.json()).then(d => setAnalytics(d));
-      fetch("/api/admin/top-domains").then(r => r.json()).then(d => setTopDomains(d.domains || [])).catch(() => {});
+      fetch("/api/admin/analytics")
+        .then((r) => r.json())
+        .then((d) => setAnalytics(d));
+      fetch("/api/admin/top-domains")
+        .then((r) => r.json())
+        .then((d) => setTopDomains(d.domains || []))
+        .catch(() => {});
     }
   }, [activeTab]);
 
@@ -247,8 +256,7 @@ export default function AdminPage() {
     ? Object.entries(analytics.riskDistribution).map(([key, value]) => ({
         name: key,
         value,
-        color:
-          key === "SAFE" ? "#10b981" : key === "SUSPICIOUS" ? "#f59e0b" : "#ef4444",
+        color: key === "SAFE" ? "#10b981" : key === "SUSPICIOUS" ? "#f59e0b" : "#ef4444",
       }))
     : [];
 
@@ -270,9 +278,7 @@ export default function AdminPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Administration</h1>
-          <p className="text-muted-foreground">
-            Manage users, view analytics, and export data
-          </p>
+          <p className="text-muted-foreground">Manage users, view analytics, and export data</p>
         </div>
         <div className="flex items-center gap-2">
           <Input
@@ -295,30 +301,14 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          title="Total Users"
-          value={analytics?.totalUsers || 0}
-          icon={Users}
-        />
-        <StatCard
-          title="Total Scans"
-          value={analytics?.totalScans || 0}
-          icon={BarChart3}
-        />
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard title="Total Users" value={analytics?.totalUsers || 0} icon={Users} />
+        <StatCard title="Total Scans" value={analytics?.totalScans || 0} icon={BarChart3} />
         <StatCard
           title="System Status"
           value={health?.status === "healthy" ? "Healthy" : "Degraded"}
           icon={Shield}
           variant={health?.status === "healthy" ? "success" : "danger"}
-        />
-        <StatCard
-          title="API Keys"
-          value={
-            [health?.vtConfigured, health?.orConfigured].filter(Boolean).length +
-            "/2"
-          }
-          icon={QrCode}
         />
       </div>
 
@@ -378,11 +368,7 @@ export default function AdminPage() {
                       <td className="py-3 pr-4">{user.name || "—"}</td>
                       <td className="py-3 pr-4">{user.email}</td>
                       <td className="py-3 pr-4">
-                        <Badge
-                          variant={
-                            user.role === "ADMIN" ? "default" : "secondary"
-                          }
-                        >
+                        <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
                           {user.role}
                         </Badge>
                       </td>
@@ -407,8 +393,7 @@ export default function AdminPage() {
                                 showConfirm(
                                   "Demote User",
                                   `Remove admin role from ${user.email}?`,
-                                  () =>
-                                    handleUserAction(user.id, "set-corporate"),
+                                  () => handleUserAction(user.id, "set-corporate"),
                                   "default",
                                 )
                               }
@@ -420,9 +405,7 @@ export default function AdminPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() =>
-                                handleUserAction(user.id, "set-admin")
-                              }
+                              onClick={() => handleUserAction(user.id, "set-admin")}
                               title="Promote to Admin"
                             >
                               <ArrowUpDown className="h-4 w-4" />
@@ -432,9 +415,7 @@ export default function AdminPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() =>
-                                handleUserAction(user.id, "unsuspend")
-                              }
+                              onClick={() => handleUserAction(user.id, "unsuspend")}
                               title="Unsuspend"
                             >
                               <Shield className="h-4 w-4" />
@@ -447,8 +428,7 @@ export default function AdminPage() {
                                 showConfirm(
                                   "Suspend User",
                                   `Suspend ${user.email}? They won't be able to log in.`,
-                                  () =>
-                                    handleUserAction(user.id, "suspend"),
+                                  () => handleUserAction(user.id, "suspend"),
                                 )
                               }
                               title="Suspend"
@@ -476,13 +456,8 @@ export default function AdminPage() {
                   ))}
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="py-8 text-center text-muted-foreground"
-                      >
-                        {userSearch
-                          ? "No users match your search"
-                          : "No users found"}
+                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        {userSearch ? "No users match your search" : "No users found"}
                       </td>
                     </tr>
                   )}
@@ -550,9 +525,7 @@ export default function AdminPage() {
                       <td className="py-3 pr-4 text-xs text-muted-foreground">
                         {scan.user?.email || "Anonymous"}
                       </td>
-                      <td className="py-3 pr-4">
-                        {truncate(scan.extractedUrl || "", 50)}
-                      </td>
+                      <td className="py-3 pr-4">{truncate(scan.extractedUrl || "", 50)}</td>
                       <td className="py-3 pr-4">{scan.riskScore ?? "—"}</td>
                       <td className="py-3 pr-4">
                         <Badge
@@ -590,10 +563,7 @@ export default function AdminPage() {
                   ))}
                   {filteredScans.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="py-8 text-center text-muted-foreground"
-                      >
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
                         {scanSearch || scanRiskFilter || scanFromDate || scanToDate
                           ? "No scans match your filters"
                           : "No scans found across the organization."}
@@ -622,10 +592,7 @@ export default function AdminPage() {
                 <CardTitle>Scans (Last 30 Days)</CardTitle>
               </CardHeader>
               <CardContent>
-                <LineChartWidget
-                  data={lineChartData}
-                  color="hsl(173, 58%, 39%)"
-                />
+                <LineChartWidget data={lineChartData} color="hsl(173, 58%, 39%)" />
               </CardContent>
             </Card>
 
@@ -666,11 +633,7 @@ export default function AdminPage() {
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Status</dt>
                     <dd>
-                      <Badge
-                        variant={
-                          health?.status === "healthy" ? "success" : "danger"
-                        }
-                      >
+                      <Badge variant={health?.status === "healthy" ? "success" : "danger"}>
                         {health?.status || "Unknown"}
                       </Badge>
                     </dd>
@@ -678,31 +641,17 @@ export default function AdminPage() {
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Database</dt>
                     <dd>
-                      <Badge
-                        variant={health?.dbConnected ? "success" : "danger"}
-                      >
+                      <Badge variant={health?.dbConnected ? "success" : "danger"}>
                         {health?.dbConnected ? "Connected" : "Disconnected"}
                       </Badge>
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">VirusTotal API</dt>
-                    <dd>
-                      <Badge
-                        variant={health?.vtConfigured ? "success" : "secondary"}
-                      >
-                        {health?.vtConfigured ? "Configured" : "Not Set"}
-                      </Badge>
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">OpenRouter API</dt>
-                    <dd>
-                      <Badge
-                        variant={health?.orConfigured ? "success" : "secondary"}
-                      >
-                        {health?.orConfigured ? "Configured" : "Not Set"}
-                      </Badge>
+                    <dt className="text-muted-foreground">Server Uptime</dt>
+                    <dd className="font-mono text-xs">
+                      {Math.floor((health?.uptime ?? 0) / 86400)}d{" "}
+                      {Math.floor(((health?.uptime ?? 0) % 86400) / 3600)}h{" "}
+                      {Math.floor(((health?.uptime ?? 0) % 3600) / 60)}m
                     </dd>
                   </div>
                 </dl>
@@ -715,10 +664,7 @@ export default function AdminPage() {
               <CardTitle>Monthly Trends (12 Months)</CardTitle>
             </CardHeader>
             <CardContent>
-              <LineChartWidget
-                data={monthlyChartData}
-                color="hsl(220, 70%, 50%)"
-              />
+              <LineChartWidget data={monthlyChartData} color="hsl(220, 70%, 50%)" />
             </CardContent>
           </Card>
 
@@ -742,9 +688,7 @@ export default function AdminPage() {
                   <tbody>
                     {topDomains.map((d) => (
                       <tr key={d.domain} className="border-b last:border-0">
-                        <td className="py-3 pr-4 font-mono text-xs">
-                          {d.domain}
-                        </td>
+                        <td className="py-3 pr-4 font-mono text-xs">{d.domain}</td>
                         <td className="py-3 pr-4">{d.count}</td>
                         <td className="py-3 pr-4">
                           <Badge
@@ -759,23 +703,14 @@ export default function AdminPage() {
                             {d.avgRiskScore}
                           </Badge>
                         </td>
-                        <td className="py-3 pr-4 text-emerald-500">
-                          {d.riskLevels.SAFE || 0}
-                        </td>
-                        <td className="py-3 pr-4 text-amber-500">
-                          {d.riskLevels.SUSPICIOUS || 0}
-                        </td>
-                        <td className="py-3 text-red-500">
-                          {d.riskLevels.PHISHING || 0}
-                        </td>
+                        <td className="py-3 pr-4 text-emerald-500">{d.riskLevels.SAFE || 0}</td>
+                        <td className="py-3 pr-4 text-amber-500">{d.riskLevels.SUSPICIOUS || 0}</td>
+                        <td className="py-3 text-red-500">{d.riskLevels.PHISHING || 0}</td>
                       </tr>
                     ))}
                     {topDomains.length === 0 && (
                       <tr>
-                        <td
-                          colSpan={6}
-                          className="py-8 text-center text-muted-foreground"
-                        >
+                        <td colSpan={6} className="py-8 text-center text-muted-foreground">
                           No domain data available yet
                         </td>
                       </tr>
@@ -785,46 +720,6 @@ export default function AdminPage() {
               </div>
             </CardContent>
           </Card>
-
-          {health && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuration</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-4">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">VirusTotal API</dt>
-                    <dd>
-                      <Badge
-                        variant={health.vtConfigured ? "success" : "secondary"}
-                      >
-                        {health.vtConfigured ? "Configured" : "Not Set"}
-                      </Badge>
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">OpenRouter API</dt>
-                    <dd>
-                      <Badge
-                        variant={health.orConfigured ? "success" : "secondary"}
-                      >
-                        {health.orConfigured ? "Configured" : "Not Set"}
-                      </Badge>
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Server Uptime</dt>
-                    <dd className="font-mono text-xs">
-                      {Math.floor((health.uptime ?? 0) / 86400)}d{" "}
-                      {Math.floor(((health.uptime ?? 0) % 86400) / 3600)}h{" "}
-                      {Math.floor(((health.uptime ?? 0) % 3600) / 60)}m
-                    </dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
-          )}
         </div>
       ) : activeTab === "logs" ? (
         <Card>
@@ -872,18 +767,12 @@ export default function AdminPage() {
                   {logs.map((log) => (
                     <tr key={log.id} className="border-b last:border-0">
                       <td className="py-3 pr-4">
-                        <Badge
-                          variant={
-                            log.logType === "audit" ? "default" : "secondary"
-                          }
-                        >
+                        <Badge variant={log.logType === "audit" ? "default" : "secondary"}>
                           {log.logType === "audit" ? "Audit" : "API"}
                         </Badge>
                       </td>
                       <td className="py-3 pr-4 font-mono text-xs">
-                        {log.logType === "audit"
-                          ? log.action
-                          : `${log.method} ${log.endpoint}`}
+                        {log.logType === "audit" ? log.action : `${log.method} ${log.endpoint}`}
                       </td>
                       <td className="py-3 pr-4 text-xs text-muted-foreground">
                         {log.logType === "audit"
@@ -898,10 +787,7 @@ export default function AdminPage() {
                   ))}
                   {logs.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={4}
-                        className="py-8 text-center text-muted-foreground"
-                      >
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
                         No logs found
                       </td>
                     </tr>
@@ -937,7 +823,7 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       ) : null}
- 
+
       <ConfirmDialog
         open={confirmOpen}
         title={confirmTitle}

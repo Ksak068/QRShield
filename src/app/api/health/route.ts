@@ -26,22 +26,13 @@ export async function GET() {
 
   const start = Date.now();
 
-  const [dbConnected, vtRow, orRow] = await Promise.all([
-    pingDatabase(),
-    prisma.setting.findUnique({ where: { key: "VIRUSTOTAL_API_KEY" } }).catch(() => null),
-    prisma.setting.findUnique({ where: { key: "OPENROUTER_API_KEY" } }).catch(() => null),
-  ]);
-
-  const vtConfigured = !!(process.env.VIRUSTOTAL_API_KEY || vtRow?.value);
-  const orConfigured = !!(process.env.OPENROUTER_API_KEY || orRow?.value);
+  const dbConnected = await pingDatabase();
 
   return NextResponse.json(
     {
       status: dbConnected ? "healthy" : "degraded",
       uptime: process.uptime(),
       dbConnected,
-      vtConfigured,
-      orConfigured,
       responseTime: Date.now() - start,
     },
     { status: dbConnected ? 200 : 503 },

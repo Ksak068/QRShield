@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { Save, Key, Palette, User, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Save, Palette, User, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,6 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
-
-  const [keySaving, setKeySaving] = useState(false);
-  const [keySaved, setKeySaved] = useState(false);
 
   const handleProfileSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -98,43 +95,11 @@ export default function SettingsPage() {
     }
   };
 
-  const handleKeySave = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setKeySaving(true);
-
-    const form = new FormData(e.currentTarget);
-    const settings: Record<string, string> = {};
-    for (const [key, value] of form.entries()) {
-      if (typeof value === "string" && value.trim()) {
-        settings[key] = value.trim();
-      }
-    }
-
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-
-      if (res.ok) {
-        setKeySaved(true);
-        setTimeout(() => setKeySaved(false), 3000);
-      }
-    } catch {
-      console.error("Failed to save settings");
-    } finally {
-      setKeySaving(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account and preferences
-        </p>
+        <p className="text-muted-foreground">Manage your account and preferences</p>
       </div>
 
       <Card>
@@ -156,25 +121,15 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                value={session?.user?.email || ""}
-                disabled
-              />
+              <Input id="email" value={session?.user?.email || ""} disabled />
             </div>
-            {profileError && (
-              <p className="text-sm text-red-500">{profileError}</p>
-            )}
+            {profileError && <p className="text-sm text-red-500">{profileError}</p>}
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={profileSaving} className="gap-2">
                 <Save className="h-4 w-4" />
                 {profileSaving ? "Saving..." : "Save Profile"}
               </Button>
-              {profileSaved && (
-                <span className="text-sm text-emerald-500">
-                  Profile updated
-                </span>
-              )}
+              {profileSaved && <span className="text-sm text-emerald-500">Profile updated</span>}
             </div>
           </form>
         </CardContent>
@@ -233,18 +188,14 @@ export default function SettingsPage() {
                 placeholder="Confirm new password"
               />
             </div>
-            {passwordError && (
-              <p className="text-sm text-red-500">{passwordError}</p>
-            )}
+            {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={passwordSaving} className="gap-2">
                 <Save className="h-4 w-4" />
                 {passwordSaving ? "Changing..." : "Change Password"}
               </Button>
               {passwordSaved && (
-                <span className="text-sm text-emerald-500">
-                  Password changed successfully
-                </span>
+                <span className="text-sm text-emerald-500">Password changed successfully</span>
               )}
             </div>
           </form>
@@ -254,77 +205,34 @@ export default function SettingsPage() {
       {isAdmin && (
         <Card>
           <CardHeader>
-            <Key className="mb-2 h-6 w-6 text-emerald-500" />
-            <CardTitle>API Keys</CardTitle>
-            <CardDescription>
-              Configure third-party security APIs for enhanced threat detection
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleKeySave} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="VIRUSTOTAL_API_KEY">VirusTotal API Key</Label>
-                <Input
-                  id="VIRUSTOTAL_API_KEY"
-                  name="VIRUSTOTAL_API_KEY"
-                  type="password"
-                  placeholder="Enter your VirusTotal API key"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="OPENROUTER_API_KEY">OpenRouter API Key</Label>
-                <Input
-                  id="OPENROUTER_API_KEY"
-                  name="OPENROUTER_API_KEY"
-                  type="password"
-                  placeholder="Enter your OpenRouter API key"
-                />
-              </div>
-              <Button type="submit" disabled={keySaving} className="gap-2">
-                <Save className="h-4 w-4" />
-                {keySaving ? "Saving..." : "Save API Keys"}
-              </Button>
-              {keySaved && (
-                <span className="ml-3 text-sm text-emerald-500">
-                  API keys saved
-                </span>
-              )}
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {isAdmin && (
-        <Card>
-          <CardHeader>
             <Palette className="mb-2 h-6 w-6 text-emerald-500" />
             <CardTitle>Appearance</CardTitle>
             <CardDescription>Customize the look and feel</CardDescription>
           </CardHeader>
           <CardContent>
-          <div className="flex items-center gap-4">
-            <Button
-              type="button"
-              variant={theme === "light" ? "default" : "outline"}
-              onClick={() => setTheme("light")}
-            >
-              Light
-            </Button>
-            <Button
-              type="button"
-              variant={theme === "dark" ? "default" : "outline"}
-              onClick={() => setTheme("dark")}
-            >
-              Dark
-            </Button>
-            <Button
-              type="button"
-              variant={theme === "system" ? "default" : "outline"}
-              onClick={() => setTheme("system")}
-            >
-              System
-            </Button>
-          </div>
+            <div className="flex items-center gap-4">
+              <Button
+                type="button"
+                variant={theme === "light" ? "default" : "outline"}
+                onClick={() => setTheme("light")}
+              >
+                Light
+              </Button>
+              <Button
+                type="button"
+                variant={theme === "dark" ? "default" : "outline"}
+                onClick={() => setTheme("dark")}
+              >
+                Dark
+              </Button>
+              <Button
+                type="button"
+                variant={theme === "system" ? "default" : "outline"}
+                onClick={() => setTheme("system")}
+              >
+                System
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
